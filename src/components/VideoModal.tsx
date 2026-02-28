@@ -5,9 +5,11 @@ type Props = {
   open: boolean;
   videoId: string;
   onClose: () => void;
+  isShort?: boolean;
+  sourceUrl?: string;
 };
 
-const VideoModal = ({ open, videoId, onClose }: Props) => {
+const VideoModal = ({ open, videoId, onClose, isShort, sourceUrl }: Props) => {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -18,7 +20,8 @@ const VideoModal = ({ open, videoId, onClose }: Props) => {
 
   if (!open) return null;
 
-  const src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+  const base = "https://www.youtube.com/embed/";
+  const src = `${base}${videoId}?autoplay=1&rel=0`;
 
   return (
     <div
@@ -26,7 +29,7 @@ const VideoModal = ({ open, videoId, onClose }: Props) => {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-[900px] rounded-2xl overflow-hidden bg-black"
+        className="relative w-full max-w-[420px] rounded-2xl overflow-hidden bg-black"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -36,13 +39,13 @@ const VideoModal = ({ open, videoId, onClose }: Props) => {
         >
           <X className="h-5 w-5" />
         </button>
-        <div className="aspect-video w-full">
+        <div className="w-full aspect-[9/16]">
           <iframe
             key={videoId}
             className="h-full w-full"
             src={src}
             title="Sentinela Player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             referrerPolicy="strict-origin-when-cross-origin"
           />

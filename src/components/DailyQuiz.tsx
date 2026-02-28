@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { recordWrongAttempt, recordCorrectAttempt } from "@/lib/progress";
 
 export type QuizQuestion = {
   question: string;
@@ -13,9 +14,10 @@ type Props = {
   questions: QuizQuestion[];
   onComplete: () => void;
   onStepCorrect?: (index: number) => void;
+  dayNumber?: number;
 };
 
-const DailyQuiz = ({ questions, onComplete, onStepCorrect }: Props) => {
+const DailyQuiz = ({ questions, onComplete, onStepCorrect, dayNumber = 1 }: Props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [status, setStatus] = useState<"idle" | "correct" | "wrong">("idle");
@@ -26,9 +28,11 @@ const DailyQuiz = ({ questions, onComplete, onStepCorrect }: Props) => {
     if (status !== "idle") return;
     setSelectedIndex(i);
     if (i === q.correctIndex) {
+      recordCorrectAttempt(dayNumber, currentIndex);
       setStatus("correct");
       if (onStepCorrect) onStepCorrect(currentIndex);
     } else {
+      recordWrongAttempt(dayNumber, currentIndex);
       setStatus("wrong");
     }
   };

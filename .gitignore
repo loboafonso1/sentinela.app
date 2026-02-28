@@ -25,3 +25,9 @@ dist-ssr
  
 # Environment files
 .env
+ 
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
