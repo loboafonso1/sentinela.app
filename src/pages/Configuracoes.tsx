@@ -10,6 +10,7 @@ import ThemeSwitcher from "@/components/ThemeSwitcher";
 import { useTheme } from "next-themes";
 import FavoriteButton from "@/components/FavoriteButton";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/useAuth";
 
 const themes = [
   { id: "purple", label: "Roxo", class: "", color: "hsl(252 70% 60%)" },
@@ -19,30 +20,40 @@ const themes = [
 
 const Configuracoes = () => {
   const navigate = useNavigate();
+  const { user, loading, signOut } = useAuth();
   const { userData, updateName, resetApp } = useMockData();
   const [name, setName] = useState(userData.name);
   const { theme, setTheme } = useTheme();
   const [autoStart, setAutoStart] = useState(localStorage.getItem("sentinela_autostart_treino") === "true");
 
   useEffect(() => {
-    if (!localStorage.getItem("sentinela_logged_in")) navigate("/login");
-  }, [navigate]);
+    if (!loading && !user) navigate("/login");
+  }, [navigate, loading, user]);
 
   const handleSaveName = () => {
     if (name.trim()) updateName(name.trim());
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("sentinela_logged_in");
-    localStorage.removeItem("sentinela_user_name");
-    navigate("/login");
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
   };
 
   return (
     <div className="min-h-screen bg-background pb-24">
       <header className="px-responsive pt-6 pb-2">
-        <div className="mx-auto max-w-lg">
+        <div className="mx-auto max-w-lg flex items-center justify-between">
           <h1 className="text-xl font-serif font-bold text-foreground">Configurações</h1>
+          <Button
+            onClick={handleLogout}
+            size="sm"
+            variant="outline"
+            title="Sair"
+            aria-label="Sair"
+            className="rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </header>
 
@@ -56,6 +67,7 @@ const Configuracoes = () => {
             <div>
               <p className="text-base font-semibold text-foreground">{userData.name}</p>
               <p className="text-xs text-muted-foreground">{userData.level}</p>
+              {user?.email && <p className="text-xs text-muted-foreground mt-0.5">{user.email}</p>}
             </div>
           </div>
           <div className="space-y-2">

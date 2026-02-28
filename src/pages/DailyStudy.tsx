@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock, PlayCircle, Flame, Zap, Shield, FileText, LineChart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import { useMockData } from "@/hooks/useMockData";
 import { dailyVideos } from "@/data/media";
 import VideoModal from "@/components/VideoModal";
@@ -49,6 +51,11 @@ const lessons: { day: number; title: string }[] = [
 const DailyStudy = () => {
   const navigate = useNavigate();
   const { userData } = useMockData();
+  const { signOut } = useAuth();
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
+  };
   const [tab, setTab] = useState<"video" | "aulas" | "progresso">("video");
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [videoId, setVideoId] = useState<string | null>(null);
@@ -60,9 +67,7 @@ const DailyStudy = () => {
   });
   const [finalizing, setFinalizing] = useState(false);
 
-  useEffect(() => {
-    if (!localStorage.getItem("sentinela_logged_in")) navigate("/login");
-  }, [navigate]);
+  // Session guard handled by ProtectedRoute in App.tsx
 
   const { formatted: countdownFmt, expired: countdownExpired } = useCountdown(nextUnlockAt);
   const lastCompletedDay = Number(localStorage.getItem("sentinela_last_completed_day") ?? "0") || 0;
@@ -126,19 +131,7 @@ const DailyStudy = () => {
     return new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 0, 0).getTime();
   };
 
-  const resetSimulation = () => {
-    localStorage.removeItem("sent_video_day1_done");
-    localStorage.removeItem("sent_quiz_day1_done");
-    localStorage.removeItem("sent_mock_percent");
-    localStorage.removeItem("sentinela_next_unlock_at");
-    localStorage.removeItem("sentinela_last_completed_day");
-    localStorage.setItem("sentinela_logged_in", "true");
-    setVideoCompleted(false);
-    setQuizCompleted(false);
-    setNextUnlockAt(null);
-    setTab("video");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  /* simulação reset removida */
 
   const handleVideoClose = () => {
     setIsVideoOpen(false);
@@ -159,17 +152,7 @@ const DailyStudy = () => {
     }
   }, [isVideoOpen, videoCompleted]);
 
-  useEffect(() => {
-    try {
-      const url = new URL(window.location.href);
-      const fresh = url.searchParams.get("startFresh");
-      if (fresh === "1" || window.location.hash === "#reset") {
-        resetSimulation();
-      }
-    } catch {
-      /* noop */
-    }
-  }, []);
+  /* gatilho de reset via URL removido */
 
   const onQuizComplete = () => {
     setQuizCompleted(true);
@@ -257,7 +240,16 @@ const DailyStudy = () => {
               </div>
             </div>
             {/* Coluna direita: ProgressDashboardRing fazendo parte do layout */}
-            <div className="justify-self-center md:justify-self-end w-fit">
+            <div className="justify-self-center md:justify-self-end w-fit flex items-center gap-2">
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                title="Sair"
+                aria-label="Sair"
+                className="rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10 h-9 px-3"
+              >
+                Sair
+              </Button>
               <ProgressDashboardRing
                 percent={progressPercent}
                 levelLabel={levelLabel}
@@ -297,24 +289,7 @@ const DailyStudy = () => {
             <div className="flex items-center gap-2 mb-2">
               <FileText className="h-5 w-5 text-primary" />
               <h2 className="text-sm font-semibold text-foreground">Jornada — 30 Dias</h2>
-              <button
-                onClick={() => {
-                  localStorage.removeItem("sent_video_day1_done");
-                  localStorage.removeItem("sent_quiz_day1_done");
-                  localStorage.removeItem("sent_mock_percent");
-                  localStorage.removeItem("sentinela_next_unlock_at");
-                  localStorage.removeItem("sentinela_last_completed_day");
-                  setVideoCompleted(false);
-                  setQuizCompleted(false);
-                  setNextUnlockAt(null);
-                  setTab("video");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                className="ml-auto rounded-full border border-border px-3 py-1 text-[11px] text-muted-foreground hover:border-primary/40"
-                title="Resetar simulação"
-              >
-                Resetar simulação
-              </button>
+            
             </div>
             <div className="rounded-3xl border border-border bg-card p-card space-y-2">
               {DAYS.map((d) => {
@@ -368,13 +343,7 @@ const DailyStudy = () => {
           <div className="flex items-center gap-2 mb-3">
             <FileText className="h-5 w-5 text-primary" />
             <h2 className="text-sm font-semibold text-foreground">Jornada — 30 Dias</h2>
-            <button
-              onClick={resetSimulation}
-              className="ml-auto rounded-full border border-border px-3 py-1 text-[11px] text-muted-foreground hover:border-primary/40"
-              title="Resetar simulação"
-            >
-              Resetar simulação
-            </button>
+            
           </div>
           <div className="mb-4">
             {!videoCompleted && (
