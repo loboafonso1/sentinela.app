@@ -7,7 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMockData } from "@/hooks/useMockData";
 import { dailyVideos } from "@/data/media";
 import VideoModal from "@/components/VideoModal";
-import ProgressDashboardRing from "@/components/ProgressDashboardRing";
 import DailyQuiz, { QuizQuestion } from "@/components/DailyQuiz";
 import { useCountdown } from "@/hooks/useCountdown";
 import { computeMetrics, computeMindProfile, finalizeDayProgress, loadProgress } from "@/lib/progress";
@@ -106,25 +105,7 @@ const DailyStudy = () => {
     const v = Math.max(0, Math.min(100, Math.round((xp / next) * 100)));
     return v;
   })();
-  const metrics = computeMetrics();
-  const progressPercent = metrics.percent || 0;
-  const levelLabel =
-    level >= 10 ? "Nível Avançado" : level >= 5 ? "Nível Intermediário" : "Nível Iniciante";
-  const supabaseAvatar = (() => {
-    try {
-      const raw = localStorage.getItem("supabase.auth.token");
-      if (!raw) return null;
-      const data = JSON.parse(raw);
-      return (
-        data?.currentSession?.user?.user_metadata?.avatar_url ||
-        data?.user?.user_metadata?.avatar_url ||
-        null
-      );
-    } catch {
-      return null;
-    }
-  })();
-  const avatarUrl = ud?.avatarUrl || supabaseAvatar || localStorage.getItem("sentinela_avatar") || undefined;
+  // anel de progresso removido do cabeçalho
 
   const getNextLocalMidnight = () => {
     const n = new Date();
@@ -205,7 +186,7 @@ const DailyStudy = () => {
               <p className="text-xs text-muted-foreground">
                 15 minutos diários para fortalecer seu discernimento.
               </p>
-              {/* Tabs dentro do cabeçalho (coluna esquerda) */}
+              {/* Tabs + badge e botão de sair no mesmo alinhamento */}
               <div className="mt-3 flex items-center gap-2">
                 <button
                   onClick={() => setTab("video")}
@@ -231,32 +212,29 @@ const DailyStudy = () => {
                 >
                   Progresso
                 </button>
+                {/* Botão de sair alinhado às tabs, após Progresso */}
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  title="Sair"
+                  aria-label="Sair"
+                  className="rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10 h-9 px-3 ml-1"
+                >
+                  Sair
+                </Button>
+                {/* Empurra o badge para a direita em telas maiores */}
+                <div className="hidden md:flex items-center ml-auto">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-foreground">
+                    🟣 Liberado hoje
+                  </span>
+                </div>
               </div>
-              {/* Badge "Liberado hoje" abaixo das tabs */}
-              <div className="mt-3">
-                <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-foreground">
-                  🟣 Liberado hoje
-                </span>
+              {/* Badge visível em telas pequenas logo abaixo das tabs */}
+              <div className="mt-3 md:hidden">
+                <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-foreground">🟣 Liberado hoje</span>
               </div>
             </div>
-            {/* Coluna direita: ProgressDashboardRing fazendo parte do layout */}
-            <div className="justify-self-center md:justify-self-end w-fit flex items-center gap-2">
-              <Button
-                onClick={handleLogout}
-                variant="outline"
-                title="Sair"
-                aria-label="Sair"
-                className="rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10 h-9 px-3"
-              >
-                Sair
-              </Button>
-              <ProgressDashboardRing
-                percent={progressPercent}
-                levelLabel={levelLabel}
-                avatarUrl={avatarUrl}
-                size="md"
-              />
-            </div>
+            {/* coluna direita removida (widget de progresso) */}
           </div>
         </div>
       </header>
