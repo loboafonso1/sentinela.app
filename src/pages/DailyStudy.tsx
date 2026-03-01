@@ -87,6 +87,7 @@ const DailyStudy = () => {
   const lastOpenRef = useRef<number | null>(null);
   const [isShort, setIsShort] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [thumbSrc, setThumbSrc] = useState<string | null>(null);
   const openVideo = (url: string) => {
     const id = extractYouTubeId(url) ?? "dQw4w9WgXcQ";
     setIsShort(/youtube\.com\/shorts\//.test(url));
@@ -94,6 +95,22 @@ const DailyStudy = () => {
     setVideoId(id);
     setIsVideoOpen(true);
     lastOpenRef.current = Date.now();
+  };
+  useEffect(() => {
+    const id = currentVideo?.id;
+    if (id) {
+      setThumbSrc(`/thumbs/daily/${id}.jpg`);
+    } else {
+      setThumbSrc(`/thumbs/daily/day-1.jpg`);
+    }
+  }, [currentVideo?.id]);
+  const handleThumbError = () => {
+    const id = currentVideo?.id;
+    if (thumbSrc && id && thumbSrc.endsWith(`/${id}.jpg`)) {
+      setThumbSrc(`/thumbs/daily/day-${id}.jpg`);
+    } else {
+      setThumbSrc(null);
+    }
   };
   type UserLike = { xp?: number; level?: number; xpNextLevel?: number; avatarUrl?: string };
   const ud = userData as unknown as UserLike;
@@ -250,8 +267,27 @@ const DailyStudy = () => {
               className="group w-full text-left rounded-3xl border border-border bg-card p-card shadow-premium"
             >
               <div className="relative rounded-2xl overflow-hidden">
-                <div className="aspect-[9/16] bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
-                  <PlayCircle className="h-16 w-16 text-white/90 drop-shadow transition-transform duration-200 ease-out group-hover:scale-105" />
+                <div className="aspect-[9/16] relative">
+                  {thumbSrc ? (
+                    <>
+                      <img
+                        src={thumbSrc}
+                        onError={handleThumbError}
+                        alt={displayTitle}
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/35" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-16 w-16 rounded-full bg-white/15 backdrop-blur border border-white/25 flex items-center justify-center transition-transform duration-200 ease-out group-hover:scale-105">
+                          <PlayCircle className="h-8 w-8 text-white drop-shadow" />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+                      <PlayCircle className="h-16 w-16 text-white/90 drop-shadow transition-transform duration-200 ease-out group-hover:scale-105" />
+                    </div>
+                  )}
                 </div>
                 <div className="absolute left-4 bottom-4 rounded-xl bg-background/85 border border-border px-3 py-2 text-xs">
                   <p className="font-semibold text-foreground">{displayTitle}</p>
