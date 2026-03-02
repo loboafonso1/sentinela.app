@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useMockData } from "@/hooks/useMockData";
 import { dailyVideos } from "@/data/media";
+import { getDayModule } from "@/modules";
 import VideoModal from "@/components/VideoModal";
 import DailyQuiz, { QuizQuestion } from "@/components/DailyQuiz";
 import { useCountdown } from "@/hooks/useCountdown";
@@ -58,8 +59,14 @@ const DailyStudy = () => {
   const [tab, setTab] = useState<"video" | "aulas" | "progresso">("video");
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [videoId, setVideoId] = useState<string | null>(null);
-  const [videoCompleted, setVideoCompleted] = useState<boolean>(() => localStorage.getItem("sent_video_day1_done") === "true");
-  const [quizCompleted, setQuizCompleted] = useState<boolean>(() => localStorage.getItem("sent_quiz_day1_done") === "true");
+  const [videoCompleted, setVideoCompleted] = useState<boolean>(() => {
+    const d = Number(localStorage.getItem("sentinela_last_active_day") || "1") || 1;
+    return localStorage.getItem(`sent_video_day${d}_done`) === "true";
+  });
+  const [quizCompleted, setQuizCompleted] = useState<boolean>(() => {
+    const d = Number(localStorage.getItem("sentinela_last_active_day") || "1") || 1;
+    return localStorage.getItem(`sent_quiz_day${d}_done`) === "true";
+  });
   const [nextUnlockAt, setNextUnlockAt] = useState<number | null>(() => {
     const v = localStorage.getItem("sentinela_next_unlock_at");
     return v ? Number(v) : null;
@@ -72,6 +79,7 @@ const DailyStudy = () => {
   const lastCompletedDay = Number(localStorage.getItem("sentinela_last_completed_day") ?? "0") || 0;
   const effectiveUnlockedDay = lastCompletedDay >= 1 ? (countdownExpired ? Math.max(unlockedDay, lastCompletedDay + 1) : Math.max(unlockedDay, lastCompletedDay)) : unlockedDay;
   const currentVideo = dailyVideos[effectiveUnlockedDay - 1] ?? dailyVideos[0];
+  const currentModule = getDayModule(effectiveUnlockedDay);
   const strategicTitles: Record<number, string> = {
     1: "Dia 1 — Como o erro começa silenciosamente",
   };
@@ -135,16 +143,18 @@ const DailyStudy = () => {
     setIsVideoOpen(false);
     setVideoCompleted(true);
     setQuizCompleted(false);
-    localStorage.setItem("sent_video_day1_done", "true");
-    localStorage.setItem("sent_quiz_day1_done", "false");
+    localStorage.setItem("sentinela_last_active_day", String(effectiveUnlockedDay));
+    localStorage.setItem(`sent_video_day${effectiveUnlockedDay}_done`, "true");
+    localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "false");
     setTab("aulas");
   };
   useEffect(() => {
     if (!isVideoOpen && lastOpenRef.current && !videoCompleted) {
       setVideoCompleted(true);
       setQuizCompleted(false);
-      localStorage.setItem("sent_video_day1_done", "true");
-      localStorage.setItem("sent_quiz_day1_done", "false");
+      localStorage.setItem("sentinela_last_active_day", String(effectiveUnlockedDay));
+      localStorage.setItem(`sent_video_day${effectiveUnlockedDay}_done`, "true");
+      localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "false");
       setTab("aulas");
       lastOpenRef.current = null;
     }
@@ -154,7 +164,7 @@ const DailyStudy = () => {
 
   const onQuizComplete = () => {
     setQuizCompleted(true);
-    localStorage.setItem("sent_quiz_day1_done", "true");
+    localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "true");
     finalizeDayProgress(effectiveUnlockedDay);
   };
 
@@ -162,7 +172,7 @@ const DailyStudy = () => {
     setFinalizing(true);
     const target = getNextLocalMidnight();
     localStorage.setItem("sentinela_next_unlock_at", String(target));
-    localStorage.setItem("sentinela_last_completed_day", "1");
+    localStorage.setItem("sentinela_last_completed_day", String(effectiveUnlockedDay));
     setNextUnlockAt(target);
     setTimeout(() => setFinalizing(false), 700);
   };
@@ -263,7 +273,7 @@ const DailyStudy = () => {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="relative">
             <button
-              onClick={() => openVideo(currentVideo.url)}
+              onClick={() => openVideo(currentModule?.video_url ?? currentVideo.url)}
               className="group w-full text-left rounded-3xl border border-border bg-card p-card shadow-premium"
             >
               <div className="relative rounded-2xl overflow-hidden">
@@ -322,7 +332,7 @@ const DailyStudy = () => {
                     </div>
                     {d === effectiveUnlockedDay ? (
                       <button
-                        onClick={() => openVideo(dailyVideos[d - 1]?.url ?? "")}
+                        onClick={() => openVideo(getDayModule(d)?.video_url ?? dailyVideos[d - 1]?.url ?? "")}
                         className="rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-medium py-2 px-3 hover:opacity-95"
                       >
                         Assistir agora
@@ -367,7 +377,7 @@ const DailyStudy = () => {
             )}
             {videoCompleted && !quizCompleted && (
               <DailyQuiz
-                questions={day1Questions}
+                questions={currentModule?.quiz ?? day1Questions}
                 onComplete={onQuizComplete}
                 dayNumber={effectiveUnlockedDay}
               />

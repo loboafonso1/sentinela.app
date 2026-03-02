@@ -1,9 +1,11 @@
-export type QuestionRecord = { attempts: number; firstTry: boolean };
+export type QuestionRecord = { attempts: number; firstTry: boolean; xpAwarded?: number };
 export type DayRecord = { day: number; completedAt?: number | null; questions: QuestionRecord[]; xpEarned: number };
 export type ProgressStore = { version: 1; days: DayRecord[]; xpTotal: number; streak: number; lastCompletedDay?: number | null; lastCompletedAt?: number | null; xpLog?: { ts: number; delta: number }[] };
 
 const KEY = "sentinela_progress_v1";
 const TOTAL_DAYS = 30;
+
+import { xpProfileForDay, computeXPForProfile } from "@/modules";
 
 export function loadProgress(): ProgressStore {
   const raw = localStorage.getItem(KEY);
@@ -34,10 +36,8 @@ function ensureDay(store: ProgressStore, day: number): DayRecord {
 }
 
 export function computeXP(attempts: number): number {
-  if (attempts <= 1) return 10;
-  if (attempts === 2) return 7;
-  if (attempts === 3) return 5;
-  return 3;
+  const profile = xpProfileForDay(1);
+  return computeXPForProfile(profile, attempts);
 }
 
 export function recordWrongAttempt(day: number, qIndex: number) {
@@ -54,11 +54,15 @@ export function recordCorrectAttempt(day: number, qIndex: number) {
   const q = d.questions[qIndex];
   q.attempts = (q.attempts || 0) + 1;
   if (q.attempts === 1) q.firstTry = true;
-  const delta = computeXP(q.attempts);
-  d.xpEarned += delta;
-  s.xpTotal += delta;
-  s.xpLog = s.xpLog || [];
-  s.xpLog.push({ ts: Date.now(), delta });
+  const profile = xpProfileForDay(day);
+  const delta = computeXPForProfile(profile, q.attempts);
+  if (!q.xpAwarded || q.xpAwarded === 0) {
+    q.xpAwarded = delta;
+    d.xpEarned += delta;
+    s.xpTotal += delta;
+    s.xpLog = s.xpLog || [];
+    s.xpLog.push({ ts: Date.now(), delta });
+  }
   saveProgress(s);
 }
 
