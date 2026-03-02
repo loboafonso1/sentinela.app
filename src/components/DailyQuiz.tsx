@@ -15,9 +15,23 @@ type Props = {
   onComplete: () => void;
   onStepCorrect?: (index: number) => void;
   dayNumber?: number;
+  recordProgress?: boolean;
 };
 
-const DailyQuiz = ({ questions, onComplete, onStepCorrect, dayNumber = 1 }: Props) => {
+const DailyQuiz = ({ questions, onComplete, onStepCorrect, dayNumber = 1, recordProgress = true }: Props) => {
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="rounded-3xl border border-border bg-card p-card">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-foreground">Quiz do dia</h3>
+          <span className="text-xs text-muted-foreground">0 pergunta</span>
+        </div>
+        <div className="rounded-xl border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
+          Nenhuma pergunta configurada para este dia. Adicione perguntas no módulo antes de testar.
+        </div>
+      </div>
+    );
+  }
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [status, setStatus] = useState<"idle" | "correct" | "wrong">("idle");
@@ -28,11 +42,11 @@ const DailyQuiz = ({ questions, onComplete, onStepCorrect, dayNumber = 1 }: Prop
     if (status !== "idle") return;
     setSelectedIndex(i);
     if (i === q.correctIndex) {
-      recordCorrectAttempt(dayNumber, currentIndex);
+      if (recordProgress) recordCorrectAttempt(dayNumber, currentIndex);
       setStatus("correct");
       if (onStepCorrect) onStepCorrect(currentIndex);
     } else {
-      recordWrongAttempt(dayNumber, currentIndex);
+      if (recordProgress) recordWrongAttempt(dayNumber, currentIndex);
       setStatus("wrong");
     }
   };

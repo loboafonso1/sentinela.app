@@ -16,6 +16,7 @@ import DailyStudy from "./pages/DailyStudy";
 import Resumo from "./pages/Resumo";
 import AuthCallback from "./pages/AuthCallback";
 import { useAuth } from "./hooks/useAuth";
+import PreviewLessons from "./pages/PreviewLessons";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,14 @@ const App = () => (
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/estudos" element={<ProtectedRoute><DailyStudy /></ProtectedRoute>} />
+          <Route
+            path="/preview"
+            element={
+              (import.meta.env.DEV || import.meta.env.VITE_PREVIEW_MODE === "true")
+                ? <ProtectedRoute><PreviewLessons /></ProtectedRoute>
+                : <Navigate to="/" replace />
+            }
+          />
           <Route path="/treino" element={<ProtectedRoute><Treino /></ProtectedRoute>} />
           <Route path="/evolucao" element={<ProtectedRoute><Evolucao /></ProtectedRoute>} />
           <Route path="/favoritos" element={<ProtectedRoute><Favoritos /></ProtectedRoute>} />

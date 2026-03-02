@@ -10,11 +10,19 @@ export function useAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
+      try {
+        if (session?.user?.id) localStorage.setItem("sentinela_user_id", session.user.id);
+        else localStorage.removeItem("sentinela_user_id");
+      } catch {}
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
+      try {
+        if (session?.user?.id) localStorage.setItem("sentinela_user_id", session.user.id);
+        else localStorage.removeItem("sentinela_user_id");
+      } catch {}
     });
 
     return () => subscription.unsubscribe();

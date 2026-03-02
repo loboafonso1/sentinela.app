@@ -1,6 +1,7 @@
 export type QuestionRecord = { attempts: number; firstTry: boolean; xpAwarded?: number };
 export type DayRecord = { day: number; completedAt?: number | null; questions: QuestionRecord[]; xpEarned: number };
-export type ProgressStore = { version: 1; days: DayRecord[]; xpTotal: number; streak: number; lastCompletedDay?: number | null; lastCompletedAt?: number | null; xpLog?: { ts: number; delta: number }[] };
+export type XpLogEntry = { ts: number; delta: number; userId?: string | null; dayId: number; questionId: number; attempts: number };
+export type ProgressStore = { version: 1; days: DayRecord[]; xpTotal: number; streak: number; lastCompletedDay?: number | null; lastCompletedAt?: number | null; xpLog?: XpLogEntry[] };
 
 const KEY = "sentinela_progress_v1";
 const TOTAL_DAYS = 30;
@@ -61,7 +62,8 @@ export function recordCorrectAttempt(day: number, qIndex: number) {
     d.xpEarned += delta;
     s.xpTotal += delta;
     s.xpLog = s.xpLog || [];
-    s.xpLog.push({ ts: Date.now(), delta });
+    const userId = localStorage.getItem("sentinela_user_id") || null;
+    s.xpLog.push({ ts: Date.now(), delta, userId, dayId: day, questionId: qIndex + 1, attempts: q.attempts });
   }
   saveProgress(s);
 }
@@ -105,7 +107,8 @@ export function computeMetrics() {
   const today = new Date();
   const todayXP = (s.xpLog || []).filter((e) => isSameDay(new Date(e.ts), today)).reduce((a, e) => a + e.delta, 0);
   const streak = s.streak || 0;
-  return { completedDays, firstTryRate, avgAttempts, xpTotal, percent, todayXP, streak };
+  const finalClass = classifyByXP(xpTotal);
+  return { completedDays, firstTryRate, avgAttempts, xpTotal, percent, todayXP, streak, finalClass };
 }
 
 export function computeMindProfile(m: { firstTryRate: number; avgAttempts: number; completedDays: number }) {
@@ -147,4 +150,11 @@ export function computeMindProfile(m: { firstTryRate: number; avgAttempts: numbe
     summary: "Baixa constância e foco reduzido na jornada.",
     recommendations: ["Defina horário fixo de estudo", "Retome a sequência diária"],
   };
+}
+
+export function classifyByXP(total: number) {
+  if (total >= 1800) return { label: "Mente Discernente", min: 1800, max: 2100 };
+  if (total >= 1400) return { label: "Mente em Formação", min: 1400, max: 1799 };
+  if (total >= 1000) return { label: "Mente Reativa", min: 1000, max: 1399 };
+  return { label: "Mente Suscetível", min: 0, max: 999 };
 }

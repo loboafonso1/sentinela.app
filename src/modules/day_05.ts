@@ -1,4 +1,4 @@
-import { registerDay, type DayModule } from "./index";
+import type { DayModule } from "./index";
 
 const mod: DayModule = {
   video_url: "https://www.youtube.com/watch?v=9bZkp7q19f0",
@@ -28,5 +28,4 @@ const mod: DayModule = {
   ],
 };
 
-registerDay(5, mod);
 export default mod;

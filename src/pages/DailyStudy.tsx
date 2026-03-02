@@ -59,6 +59,15 @@ const DailyStudy = () => {
   const [tab, setTab] = useState<"video" | "aulas" | "progresso">("video");
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [videoId, setVideoId] = useState<string | null>(null);
+  const [videoOpenDay, setVideoOpenDay] = useState<number | null>(null);
+  const [adminUnlockOn, setAdminUnlockOn] = useState<boolean>(() => {
+    try {
+      const v = localStorage.getItem("sent_unlock_max");
+      return !!v && Number(v) >= 1;
+    } catch {
+      return false;
+    }
+  });
   const [videoCompleted, setVideoCompleted] = useState<boolean>(() => {
     const d = Number(localStorage.getItem("sentinela_last_active_day") || "1") || 1;
     return localStorage.getItem(`sent_video_day${d}_done`) === "true";
@@ -77,13 +86,27 @@ const DailyStudy = () => {
 
   const { formatted: countdownFmt, expired: countdownExpired } = useCountdown(nextUnlockAt);
   const lastCompletedDay = Number(localStorage.getItem("sentinela_last_completed_day") ?? "0") || 0;
-  const effectiveUnlockedDay = lastCompletedDay >= 1 ? (countdownExpired ? Math.max(unlockedDay, lastCompletedDay + 1) : Math.max(unlockedDay, lastCompletedDay)) : unlockedDay;
-  const currentVideo = dailyVideos[effectiveUnlockedDay - 1] ?? dailyVideos[0];
-  const currentModule = getDayModule(effectiveUnlockedDay);
-  const strategicTitles: Record<number, string> = {
-    1: "Dia 1 — Como o erro começa silenciosamente",
-  };
-  const displayTitle = strategicTitles[unlockedDay] ?? currentVideo.title;
+  const DEV_UNLOCK_MAX = (() => {
+    try {
+      const local = localStorage.getItem("sent_unlock_max");
+      if (local) return Number(local);
+    } catch {}
+    const env = import.meta.env.VITE_DEV_UNLOCK_MAX;
+    if (env) return Number(env);
+    if (import.meta.env.DEV) return 7;
+    return NaN;
+  })();
+  const devUnlockActive = Number.isFinite(DEV_UNLOCK_MAX) && DEV_UNLOCK_MAX >= 1;
+  const effectiveUnlockedDay = devUnlockActive
+    ? Math.min(DEV_UNLOCK_MAX, 7)
+    : lastCompletedDay >= 1
+      ? (countdownExpired ? Math.max(unlockedDay, lastCompletedDay + 1) : Math.max(unlockedDay, lastCompletedDay))
+      : unlockedDay;
+  const [selectedDay, setSelectedDay] = useState<number>(effectiveUnlockedDay);
+  useEffect(() => { setSelectedDay(effectiveUnlockedDay); }, [effectiveUnlockedDay]);
+  const currentVideo = dailyVideos[selectedDay - 1] ?? dailyVideos[0];
+  const currentModule = getDayModule(selectedDay);
+  const displayTitle = `Dia ${selectedDay} — ${lessons[selectedDay - 1]?.title ?? currentVideo.title ?? "Aula"}`;
   const extractYouTubeId = (url: string): string | null => {
     const r1 = /(?:youtube\.com\/.*(?:\?|&)v=|youtu\.be\/)([A-Za-z0-9_-]{11})/;
     const r2 = /youtube\.com\/shorts\/([A-Za-z0-9_-]{11})/;
@@ -96,26 +119,45 @@ const DailyStudy = () => {
   const [isShort, setIsShort] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [thumbSrc, setThumbSrc] = useState<string | null>(null);
-  const openVideo = (url: string) => {
+  const thumbIdxRef = useRef<number>(0);
+  const thumbCandidatesRef = useRef<string[]>([]);
+  const makeThumbCandidates = (id: number): string[] => {
+    const c1 = `/thumbs/daily/${id}.jpg`;
+    const c2 = `/thumbs/daily/day-${id}.jpg`;
+    const c3 = encodeURI(`/thumbs/daily/dia ${id}.jpg`);
+    const c4 = `/thumbs/daily/dia-${id}.jpg`;
+    return [c1, c2, c3, c4];
+  };
+  const getEffectiveVideoUrl = (day: number): string => {
+    try {
+      const override = localStorage.getItem(`sent_preview_video_override_day${day}`);
+      if (override && override.trim().length > 0) return override;
+    } catch {}
+    return getDayModule(day)?.video_url ?? dailyVideos[day - 1]?.url ?? "";
+  };
+  const openVideo = (day: number, url: string) => {
     const id = extractYouTubeId(url) ?? "dQw4w9WgXcQ";
     setIsShort(/youtube\.com\/shorts\//.test(url));
     setVideoUrl(url);
     setVideoId(id);
+    setVideoOpenDay(day);
     setIsVideoOpen(true);
     lastOpenRef.current = Date.now();
   };
+  const progressStore = loadProgress();
   useEffect(() => {
-    const id = currentVideo?.id;
-    if (id) {
-      setThumbSrc(`/thumbs/daily/${id}.jpg`);
-    } else {
-      setThumbSrc(`/thumbs/daily/day-1.jpg`);
-    }
-  }, [currentVideo?.id]);
+    const id = selectedDay || 1;
+    const candidates = makeThumbCandidates(id);
+    thumbCandidatesRef.current = candidates;
+    thumbIdxRef.current = 0;
+    setThumbSrc(candidates[0]);
+  }, [selectedDay]);
   const handleThumbError = () => {
-    const id = currentVideo?.id;
-    if (thumbSrc && id && thumbSrc.endsWith(`/${id}.jpg`)) {
-      setThumbSrc(`/thumbs/daily/day-${id}.jpg`);
+    const nextIdx = thumbIdxRef.current + 1;
+    const arr = thumbCandidatesRef.current;
+    if (nextIdx < arr.length) {
+      thumbIdxRef.current = nextIdx;
+      setThumbSrc(arr[nextIdx]);
     } else {
       setThumbSrc(null);
     }
@@ -143,10 +185,12 @@ const DailyStudy = () => {
     setIsVideoOpen(false);
     setVideoCompleted(true);
     setQuizCompleted(false);
-    localStorage.setItem("sentinela_last_active_day", String(effectiveUnlockedDay));
-    localStorage.setItem(`sent_video_day${effectiveUnlockedDay}_done`, "true");
-    localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "false");
+    const dayForClose = videoOpenDay ?? effectiveUnlockedDay;
+    localStorage.setItem("sentinela_last_active_day", String(dayForClose));
+    localStorage.setItem(`sent_video_day${dayForClose}_done`, "true");
+    localStorage.setItem(`sent_quiz_day${dayForClose}_done`, "false");
     setTab("aulas");
+    setVideoOpenDay(null);
   };
   useEffect(() => {
     if (!isVideoOpen && lastOpenRef.current && !videoCompleted) {
@@ -179,25 +223,25 @@ const DailyStudy = () => {
 
   const day1Questions: QuizQuestion[] = [
     {
-      question: "Como devemos testar um ensino?",
-      options: ["Pela emoção", "Pela maioria", "Conferindo nas Escrituras", "Pelo carisma"],
-      correctIndex: 2,
-      verseRef: "Atos 17:11",
-      verseText: "Examinavam as Escrituras todos os dias…",
+      question: "Como o erro costuma começar na vida da igreja?",
+      options: ["Com pequenas distorções toleradas", "Negando abertamente o evangelho", "Apenas com heresias explícitas", "Com debates acadêmicos complexos"],
+      correctIndex: 0,
+      verseRef: "Gl 5:9",
+      verseText: "Um pouco de fermento leveda toda a massa.",
     },
     {
-      question: "O que acontece quando alguém prega outro evangelho?",
-      options: ["É aceitável", "Deve ser ignorado", "Deve ser rejeitado", "Depende do contexto"],
-      correctIndex: 2,
-      verseRef: "Gálatas 1:8",
-      verseText: "Se alguém pregar outro evangelho…",
-    },
-    {
-      question: "Qual atitude protege contra o engano?",
-      options: ["Curiosidade sem filtro", "Vigilância e sobriedade", "Seguir tendências", "Evitar estudar"],
+      question: "Qual prática protege contra o início silencioso do erro?",
+      options: ["Seguir a maioria", "Examinar diariamente as Escrituras", "Confiar na intuição", "Apoiar-se no carisma do pregador"],
       correctIndex: 1,
-      verseRef: "1 Pedro 5:8",
-      verseText: "Sede sóbrios e vigilantes…",
+      verseRef: "At 17:11",
+      verseText: "Examinavam diariamente as Escrituras para ver se as coisas eram assim.",
+    },
+    {
+      question: "Ao ouvir um novo ensino, qual atitude é correta?",
+      options: ["Receber sem julgar", "Testar e reter o que é bom", "Rejeitar tudo que é novo", "Crer por causa da autoridade de quem ensina"],
+      correctIndex: 1,
+      verseRef: "1Ts 5:21",
+      verseText: "Examinai tudo. Retende o que é bom.",
     },
   ];
 
@@ -239,6 +283,24 @@ const DailyStudy = () => {
                 >
                   Progresso
                 </button>
+                {import.meta.env.DEV && (
+                  <button
+                    onClick={() => {
+                      const next = !adminUnlockOn;
+                      try {
+                        if (next) localStorage.setItem("sent_unlock_max", "7");
+                        else localStorage.removeItem("sent_unlock_max");
+                      } catch {}
+                      setAdminUnlockOn(next);
+                    }}
+                    className={`px-3 py-2 rounded-xl text-[11px] font-semibold border ${
+                      adminUnlockOn ? "border-emerald-400/40 text-emerald-400 bg-emerald-500/10" : "border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="Desbloquear dias 1–7"
+                  >
+                    {adminUnlockOn ? "Desbloqueio 1–7: ON" : "Desbloqueio 1–7: OFF"}
+                  </button>
+                )}
                 {/* Botão de sair alinhado às tabs, após Progresso */}
                 <Button
                   onClick={handleLogout}
@@ -273,7 +335,7 @@ const DailyStudy = () => {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="relative">
             <button
-              onClick={() => openVideo(currentModule?.video_url ?? currentVideo.url)}
+              onClick={() => openVideo(selectedDay, getEffectiveVideoUrl(selectedDay))}
               className="group w-full text-left rounded-3xl border border-border bg-card p-card shadow-premium"
             >
               <div className="relative rounded-2xl overflow-hidden">
@@ -319,26 +381,35 @@ const DailyStudy = () => {
               {DAYS.map((d) => {
                 const unlocked = d <= effectiveUnlockedDay;
                 const t = lessons[d - 1]?.title ?? "Aula";
+                const rec = progressStore.days.find((x) => x.day === d);
+                const isCompleted = devUnlockActive ? true : !!rec?.completedAt;
                 return (
                   <div
                     key={d}
                     className={`rounded-2xl border p-4 flex items-center justify-between transition-all ${
                       unlocked ? "bg-card hover:border-primary/40" : "bg-muted/30 border-border opacity-70"
                     }`}
+                    onClick={() => { if (unlocked) setSelectedDay(d); }}
                   >
                     <div>
                       <p className="text-sm font-semibold text-foreground">Dia {d} de {TOTAL_DAYS} — {t}</p>
                       <p className="text-xs text-muted-foreground">Duração ~ 15 min</p>
                     </div>
-                    {d === effectiveUnlockedDay ? (
-                      <button
-                        onClick={() => openVideo(getDayModule(d)?.video_url ?? dailyVideos[d - 1]?.url ?? "")}
-                        className="rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-medium py-2 px-3 hover:opacity-95"
-                      >
-                        Assistir agora
-                      </button>
-                    ) : unlocked ? (
-                      <span className="text-xs text-muted-foreground">Liberado</span>
+                    {unlocked ? (
+                      <div className="flex items-center gap-2">
+                        {isCompleted && (
+                          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[11px] px-2 py-1">
+                            Concluído
+                          </span>
+                        )}
+                        <button
+                          onClick={() => openVideo(d, getEffectiveVideoUrl(d))}
+                          className={`rounded-lg ${d === effectiveUnlockedDay ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white" : "border border-border text-foreground"} text-xs font-medium py-2 px-3 hover:opacity-95`}
+                          title={d === effectiveUnlockedDay ? "Assistir agora" : "Assistir novamente"}
+                        >
+                          {d === effectiveUnlockedDay ? "Assistir agora" : "Assistir novamente"}
+                        </button>
+                      </div>
                     ) : (
                       <>
                         {d === effectiveUnlockedDay + 1 && nextUnlockAt && !countdownExpired ? (
@@ -370,34 +441,34 @@ const DailyStudy = () => {
             
           </div>
           <div className="mb-4">
-            {!videoCompleted && (
+            {!(devUnlockActive || videoCompleted) && (
               <div className="rounded-2xl border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
                 Assista a aula de hoje para desbloquear o quiz.
               </div>
             )}
-            {videoCompleted && !quizCompleted && (
+            {(devUnlockActive || videoCompleted) && !quizCompleted && (
               <DailyQuiz
                 questions={currentModule?.quiz ?? day1Questions}
                 onComplete={onQuizComplete}
                 dayNumber={effectiveUnlockedDay}
               />
             )}
-            {videoCompleted && quizCompleted && (
+            {(devUnlockActive || videoCompleted) && quizCompleted && (
               <div className="space-y-3">
                 <button
                   onClick={finalizeDay}
-                  disabled={finalizing || !!nextUnlockAt}
+                  disabled={finalizing || (!devUnlockActive && !!nextUnlockAt)}
                   className={`w-full rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold py-3 px-4 shadow-lg transition ${finalizing ? "opacity-80" : "hover:shadow-[0_0_20px_rgba(236,72,153,0.35)]"}`}
                 >
                   {finalizing ? "Concluindo..." : "Concluir treino de hoje"}
                   <span className="ml-2 text-white/80 text-xs">Desbloquear o próximo dia</span>
                 </button>
-                {nextUnlockAt && !countdownExpired && (
+                {!devUnlockActive && nextUnlockAt && !countdownExpired && (
                   <div className="rounded-2xl border border-border bg-card p-3 text-center text-xs text-muted-foreground">
                     Próxima aula disponível em: <span className="font-semibold text-foreground">{countdownFmt}</span>
                   </div>
                 )}
-                {nextUnlockAt && countdownExpired && (
+                {!devUnlockActive && nextUnlockAt && countdownExpired && (
                   <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-center text-sm font-semibold text-foreground">
                     ✅ Treino concluído. Próxima aula liberada.
                   </div>
@@ -409,26 +480,35 @@ const DailyStudy = () => {
             {DAYS.map((d) => {
               const unlocked = d <= effectiveUnlockedDay;
               const t = lessons[d - 1]?.title ?? "Aula";
+              const rec = progressStore.days.find((x) => x.day === d);
+              const isCompleted = devUnlockActive ? true : !!rec?.completedAt;
               return (
                 <div
                   key={d}
                   className={`rounded-2xl border p-4 flex items-center justify-between transition-all ${
                     unlocked ? "bg-card hover:border-primary/40" : "bg-muted/30 border-border opacity-70"
                   }`}
+                  onClick={() => { if (unlocked) setSelectedDay(d); }}
                 >
                   <div>
                     <p className="text-sm font-semibold text-foreground">Dia {d} de {TOTAL_DAYS} — {t}</p>
                     <p className="text-xs text-muted-foreground">Duração ~ 15 min</p>
                   </div>
-                  {d === effectiveUnlockedDay ? (
-                    <button
-                      onClick={() => openVideo(dailyVideos[d - 1]?.url ?? "")}
-                      className="rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-medium py-2 px-3 hover:opacity-95"
-                    >
-                      Assistir agora
-                    </button>
-                  ) : unlocked ? (
-                    <span className="text-xs text-muted-foreground">Liberado</span>
+                  {unlocked ? (
+                    <div className="flex items-center gap-2">
+                      {isCompleted && (
+                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[11px] px-2 py-1">
+                          Concluído
+                        </span>
+                      )}
+                      <button
+                        onClick={() => openVideo(d, getEffectiveVideoUrl(d))}
+                        className={`rounded-lg ${d === effectiveUnlockedDay ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white" : "border border-border text-foreground"} text-xs font-medium py-2 px-3 hover:opacity-95`}
+                        title={d === effectiveUnlockedDay ? "Assistir agora" : "Assistir novamente"}
+                      >
+                        {d === effectiveUnlockedDay ? "Assistir agora" : "Assistir novamente"}
+                      </button>
+                    </div>
                   ) : (
                     <>
                       {d === effectiveUnlockedDay + 1 && nextUnlockAt && !countdownExpired ? (
