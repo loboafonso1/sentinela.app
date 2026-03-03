@@ -186,9 +186,9 @@ const DailyStudy = () => {
     setVideoCompleted(true);
     setQuizCompleted(false);
     const dayForClose = videoOpenDay ?? effectiveUnlockedDay;
-    localStorage.setItem("sentinela_last_active_day", String(dayForClose));
-    localStorage.setItem(`sent_video_day${dayForClose}_done`, "true");
-    localStorage.setItem(`sent_quiz_day${dayForClose}_done`, "false");
+    try { localStorage.setItem("sentinela_last_active_day", String(dayForClose)); } catch {}
+    try { localStorage.setItem(`sent_video_day${dayForClose}_done`, "true"); } catch {}
+    try { localStorage.setItem(`sent_quiz_day${dayForClose}_done`, "false"); } catch {}
     setTab("aulas");
     setVideoOpenDay(null);
   };
@@ -196,9 +196,9 @@ const DailyStudy = () => {
     if (!isVideoOpen && lastOpenRef.current && !videoCompleted) {
       setVideoCompleted(true);
       setQuizCompleted(false);
-      localStorage.setItem("sentinela_last_active_day", String(effectiveUnlockedDay));
-      localStorage.setItem(`sent_video_day${effectiveUnlockedDay}_done`, "true");
-      localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "false");
+      try { localStorage.setItem("sentinela_last_active_day", String(effectiveUnlockedDay)); } catch {}
+      try { localStorage.setItem(`sent_video_day${effectiveUnlockedDay}_done`, "true"); } catch {}
+      try { localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "false"); } catch {}
       setTab("aulas");
       lastOpenRef.current = null;
     }
@@ -208,15 +208,15 @@ const DailyStudy = () => {
 
   const onQuizComplete = () => {
     setQuizCompleted(true);
-    localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "true");
+    try { localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "true"); } catch {}
     finalizeDayProgress(effectiveUnlockedDay);
   };
 
   const finalizeDay = () => {
     setFinalizing(true);
     const target = getNextLocalMidnight();
-    localStorage.setItem("sentinela_next_unlock_at", String(target));
-    localStorage.setItem("sentinela_last_completed_day", String(effectiveUnlockedDay));
+    try { localStorage.setItem("sentinela_next_unlock_at", String(target)); } catch {}
+    try { localStorage.setItem("sentinela_last_completed_day", String(effectiveUnlockedDay)); } catch {}
     setNextUnlockAt(target);
     setTimeout(() => setFinalizing(false), 700);
   };
@@ -457,7 +457,7 @@ const DailyStudy = () => {
               <div className="space-y-3">
                 <button
                   onClick={finalizeDay}
-                  disabled={finalizing || (!devUnlockActive && !!nextUnlockAt)}
+                  disabled={finalizing || (!devUnlockActive && !!nextUnlockAt && !countdownExpired)}
                   className={`w-full rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold py-3 px-4 shadow-lg transition ${finalizing ? "opacity-80" : "hover:shadow-[0_0_20px_rgba(236,72,153,0.35)]"}`}
                 >
                   {finalizing ? "Concluindo..." : "Concluir treino de hoje"}

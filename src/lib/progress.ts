@@ -9,20 +9,27 @@ const TOTAL_DAYS = 30;
 import { xpProfileForDay, computeXPForProfile } from "@/modules";
 
 export function loadProgress(): ProgressStore {
-  const raw = localStorage.getItem(KEY);
-  if (!raw) {
-    return { version: 1, days: [], xpTotal: 0, streak: 0, lastCompletedDay: null, lastCompletedAt: null, xpLog: [] };
-  }
   try {
-    const data = JSON.parse(raw) as ProgressStore;
-    return data?.version === 1 ? data : { version: 1, days: [], xpTotal: 0, streak: 0, lastCompletedDay: null, lastCompletedAt: null, xpLog: [] };
+    const raw = localStorage.getItem(KEY);
+    if (!raw) {
+      return { version: 1, days: [], xpTotal: 0, streak: 0, lastCompletedDay: null, lastCompletedAt: null, xpLog: [] };
+    }
+    try {
+      const data = JSON.parse(raw) as ProgressStore;
+      return data?.version === 1 ? data : { version: 1, days: [], xpTotal: 0, streak: 0, lastCompletedDay: null, lastCompletedAt: null, xpLog: [] };
+    } catch {
+      return { version: 1, days: [], xpTotal: 0, streak: 0, lastCompletedDay: null, lastCompletedAt: null, xpLog: [] };
+    }
   } catch {
     return { version: 1, days: [], xpTotal: 0, streak: 0, lastCompletedDay: null, lastCompletedAt: null, xpLog: [] };
   }
 }
 
 export function saveProgress(store: ProgressStore) {
-  localStorage.setItem(KEY, JSON.stringify(store));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(store));
+  } catch {
+  }
 }
 
 function ensureDay(store: ProgressStore, day: number): DayRecord {
