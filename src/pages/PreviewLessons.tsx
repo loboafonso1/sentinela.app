@@ -42,16 +42,22 @@ const PreviewLessons = () => {
     const m2 = u.match(r2);
     return m2 ? m2[1] : null;
   };
+  const thumbIdxRef = useRef<number>(0);
+  const thumbCandidatesRef = useRef<string[]>([]);
   useEffect(() => {
-    if (day) {
-      setThumbSrc(`/thumbs/daily/${day}.jpg`);
-    } else {
-      setThumbSrc(`/thumbs/daily/day-1.jpg`);
-    }
+    const c1 = `/thumbs/daily/${day}.jpg`;
+    const c2 = `/thumbs/daily/day-${day}.jpg`;
+    const c3 = encodeURI(`/thumbs/daily/dia ${day}.jpg`);
+    const c4 = `/thumbs/daily/dia-${day}.jpg`;
+    thumbCandidatesRef.current = [c1, c2, c3, c4];
+    thumbIdxRef.current = 0;
+    setThumbSrc(thumbCandidatesRef.current[0]);
   }, [day]);
   const handleThumbError = () => {
-    if (thumbSrc && day && thumbSrc.endsWith(`/${day}.jpg`)) {
-      setThumbSrc(`/thumbs/daily/day-${day}.jpg`);
+    const next = thumbIdxRef.current + 1;
+    if (next < thumbCandidatesRef.current.length) {
+      thumbIdxRef.current = next;
+      setThumbSrc(thumbCandidatesRef.current[next]);
     } else {
       setThumbSrc(null);
     }
