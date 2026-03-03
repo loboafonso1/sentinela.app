@@ -2,7 +2,7 @@ import type { DayModule } from "./index";
 
 const mod: DayModule = {
   title: "Diferença entre opinião e heresia",
-  video_url: "https://www.youtube.com/watch?v=M3wgaWAHo2Q",
+  video_url: "https://www.youtube.com/shorts/nWX6EcHmt9Q",
   xp_profile: "medium",
   quiz: [
     {
