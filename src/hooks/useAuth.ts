@@ -13,7 +13,7 @@ export function useAuth() {
       try {
         if (session?.user?.id) localStorage.setItem("sentinela_user_id", session.user.id);
         else localStorage.removeItem("sentinela_user_id");
-      } catch {}
+      } catch { void 0; }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -22,7 +22,7 @@ export function useAuth() {
       try {
         if (session?.user?.id) localStorage.setItem("sentinela_user_id", session.user.id);
         else localStorage.removeItem("sentinela_user_id");
-      } catch {}
+      } catch { void 0; }
     });
 
     return () => subscription.unsubscribe();

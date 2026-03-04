@@ -150,8 +150,7 @@ const PreviewLessons = () => {
                 <input
                   type="text"
                   placeholder="https://youtube.com/..."
-                  defaultValue={(() => { try { return localStorage.getItem(`sent_preview_video_override_day${day}`) || ""; } catch { return ""; } })()}
-                  onChange={(e) => (e.currentTarget as any).__value = e.target.value}
+          defaultValue={(() => { try { return localStorage.getItem(`sent_preview_video_override_day${day}`) || ""; } catch { return ""; } })()}
                   className="flex-1 rounded-xl border border-border bg-background px-3 py-2"
                 />
                 <button
@@ -161,7 +160,7 @@ const PreviewLessons = () => {
                     try {
                       if (val) localStorage.setItem(`sent_preview_video_override_day${day}`, val);
                       else localStorage.removeItem(`sent_preview_video_override_day${day}`);
-                    } catch {}
+                    } catch { void 0; }
                     setVideoIdx(0);
                   }}
                   className="rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:border-primary/40"
@@ -169,7 +168,7 @@ const PreviewLessons = () => {
                   Salvar
                 </button>
                 <button
-                  onClick={() => { try { localStorage.removeItem(`sent_preview_video_override_day${day}`); } catch {}; setVideoIdx(0); }}
+                  onClick={() => { try { localStorage.removeItem(`sent_preview_video_override_day${day}`); } catch { void 0; }; setVideoIdx(0); }}
                   className="rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:border-primary/40"
                 >
                   Limpar

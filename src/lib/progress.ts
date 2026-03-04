@@ -28,8 +28,7 @@ export function loadProgress(): ProgressStore {
 export function saveProgress(store: ProgressStore) {
   try {
     localStorage.setItem(KEY, JSON.stringify(store));
-  } catch {
-  }
+  } catch { void 0; }
 }
 
 function ensureDay(store: ProgressStore, day: number): DayRecord {

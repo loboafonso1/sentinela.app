@@ -64,7 +64,8 @@ const DailyStudy = () => {
     try {
       const v = localStorage.getItem("sent_unlock_max");
       return !!v && Number(v) >= 1;
-    } catch {
+    } catch { 
+      void 0; 
       return false;
     }
   });
@@ -90,7 +91,7 @@ const DailyStudy = () => {
     try {
       const local = localStorage.getItem("sent_unlock_max");
       if (local) return Number(local);
-    } catch {}
+    } catch { void 0; }
     const env = import.meta.env.VITE_DEV_UNLOCK_MAX;
     if (env) return Number(env);
     if (import.meta.env.DEV) return 7;
@@ -132,7 +133,7 @@ const DailyStudy = () => {
     try {
       const override = localStorage.getItem(`sent_preview_video_override_day${day}`);
       if (override && override.trim().length > 0) return override;
-    } catch {}
+    } catch { void 0; }
     return getDayModule(day)?.video_url ?? dailyVideos[day - 1]?.url ?? "";
   };
   const openVideo = (day: number, url: string) => {
@@ -186,9 +187,9 @@ const DailyStudy = () => {
     setVideoCompleted(true);
     setQuizCompleted(false);
     const dayForClose = videoOpenDay ?? effectiveUnlockedDay;
-    try { localStorage.setItem("sentinela_last_active_day", String(dayForClose)); } catch {}
-    try { localStorage.setItem(`sent_video_day${dayForClose}_done`, "true"); } catch {}
-    try { localStorage.setItem(`sent_quiz_day${dayForClose}_done`, "false"); } catch {}
+    try { localStorage.setItem("sentinela_last_active_day", String(dayForClose)); } catch { void 0; }
+    try { localStorage.setItem(`sent_video_day${dayForClose}_done`, "true"); } catch { void 0; }
+    try { localStorage.setItem(`sent_quiz_day${dayForClose}_done`, "false"); } catch { void 0; }
     setTab("aulas");
     setVideoOpenDay(null);
   };
@@ -196,9 +197,9 @@ const DailyStudy = () => {
     if (!isVideoOpen && lastOpenRef.current && !videoCompleted) {
       setVideoCompleted(true);
       setQuizCompleted(false);
-      try { localStorage.setItem("sentinela_last_active_day", String(effectiveUnlockedDay)); } catch {}
-      try { localStorage.setItem(`sent_video_day${effectiveUnlockedDay}_done`, "true"); } catch {}
-      try { localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "false"); } catch {}
+      try { localStorage.setItem("sentinela_last_active_day", String(effectiveUnlockedDay)); } catch { void 0; }
+      try { localStorage.setItem(`sent_video_day${effectiveUnlockedDay}_done`, "true"); } catch { void 0; }
+      try { localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "false"); } catch { void 0; }
       setTab("aulas");
       lastOpenRef.current = null;
     }
@@ -208,15 +209,15 @@ const DailyStudy = () => {
 
   const onQuizComplete = () => {
     setQuizCompleted(true);
-    try { localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "true"); } catch {}
+    try { localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "true"); } catch { void 0; }
     finalizeDayProgress(effectiveUnlockedDay);
   };
 
   const finalizeDay = () => {
     setFinalizing(true);
     const target = getNextLocalMidnight();
-    try { localStorage.setItem("sentinela_next_unlock_at", String(target)); } catch {}
-    try { localStorage.setItem("sentinela_last_completed_day", String(effectiveUnlockedDay)); } catch {}
+    try { localStorage.setItem("sentinela_next_unlock_at", String(target)); } catch { void 0; }
+    try { localStorage.setItem("sentinela_last_completed_day", String(effectiveUnlockedDay)); } catch { void 0; }
     setNextUnlockAt(target);
     setTimeout(() => setFinalizing(false), 700);
   };
@@ -290,7 +291,7 @@ const DailyStudy = () => {
                       try {
                         if (next) localStorage.setItem("sent_unlock_max", "7");
                         else localStorage.removeItem("sent_unlock_max");
-                      } catch {}
+                      } catch { void 0; }
                       setAdminUnlockOn(next);
                     }}
                     className={`px-3 py-2 rounded-xl text-[11px] font-semibold border ${
