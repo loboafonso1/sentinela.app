@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -20,10 +20,20 @@ import PreviewLessons from "./pages/PreviewLessons";
 
 const queryClient = new QueryClient();
 
+import { checkUserSubscription } from "@/lib/subscriptions";
+
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/" replace />;
+  const uid = user?.id ?? "";
+  const { data: hasSub, isLoading } = useQuery({
+    queryKey: ["subscription", uid],
+    queryFn: () => checkUserSubscription(uid),
+    enabled: !!uid,
+    staleTime: 60_000,
+  });
+  if (loading || isLoading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!hasSub) return <Navigate to="/assinar" replace />;
   return children;
 };
 
@@ -39,6 +49,7 @@ const App = () => (
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/estudos" element={<ProtectedRoute><DailyStudy /></ProtectedRoute>} />
+          <Route path="/assinar" element={<MeuPlano />} />
           <Route
             path="/preview"
             element={
