@@ -3,5 +3,7 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": []
+  "rewrites": [
+    { "source": "/((?!assets/|.*\\..*).*)", "destination": "/" }
+  ]
 }
