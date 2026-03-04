@@ -1,6 +1,6 @@
 export type QuestionRecord = { attempts: number; firstTry: boolean; xpAwarded?: number };
 export type DayRecord = { day: number; completedAt?: number | null; questions: QuestionRecord[]; xpEarned: number };
-export type XpLogEntry = { ts: number; delta: number; userId?: string | null; dayId: number; questionId: number; attempts: number };
+export type XpLogEntry = { ts: number; delta: number; userId?: string | null; dayId?: number; questionId?: number; attempts?: number };
 export type ProgressStore = { version: 1; days: DayRecord[]; xpTotal: number; streak: number; lastCompletedDay?: number | null; lastCompletedAt?: number | null; xpLog?: XpLogEntry[] };
 
 const KEY = "sentinela_progress_v1";

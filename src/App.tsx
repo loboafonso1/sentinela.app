@@ -17,6 +17,7 @@ import Resumo from "./pages/Resumo";
 import AuthCallback from "./pages/AuthCallback";
 import { useAuth } from "./hooks/useAuth";
 import PreviewLessons from "./pages/PreviewLessons";
+import MeuPlano from "./pages/MeuPlano";
 
 const queryClient = new QueryClient();
 

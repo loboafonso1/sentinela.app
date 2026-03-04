@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type SubscriptionStatus = "active" | "canceled" | "expired";
+type SubscriptionRow = { status?: SubscriptionStatus | null; expires_at?: string | null };
 
 export async function checkUserSubscription(userId: string): Promise<boolean> {
   const url = import.meta.env.VITE_SUPABASE_URL;
@@ -10,7 +11,7 @@ export async function checkUserSubscription(userId: string): Promise<boolean> {
   }
   if (!userId) return false;
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("subscriptions")
     .select("status, expires_at")
     .eq("user_id", userId)
@@ -21,9 +22,10 @@ export async function checkUserSubscription(userId: string): Promise<boolean> {
   if (error) {
     return false;
   }
-  if (!data) return false;
-  const isActive = data.status === "active";
-  const expiresAt = data.expires_at ? new Date(data.expires_at) : null;
+  const row = data as SubscriptionRow | null;
+  if (!row) return false;
+  const isActive = row.status === "active";
+  const expiresAt = row.expires_at ? new Date(row.expires_at) : null;
   const notExpired = expiresAt ? expiresAt.getTime() > Date.now() : false;
   return isActive && notExpired;
 }
