@@ -97,6 +97,9 @@ const Onboarding = () => {
                   </>
                 )}
               </Button>
+              <p className="text-[11px] text-white/80 text-center mt-2">
+                acesso liberado com email usado na compra.
+              </p>
             </div>
           </div>
           {/* Bottom home bar */}
@@ -112,7 +115,6 @@ const Onboarding = () => {
             </div>
             <span className="text-xs text-white/80">Acesso exclusivo para membros ativos.</span>
           </div>
-          <p className="mt-2 text-xs text-white/80">acesso liberado com email usado na compra.</p>
         </div>
       </div>
     </div>
