@@ -1,4 +1,4 @@
-module.exports = async function (req, res) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
       success: false,
@@ -24,4 +24,4 @@ module.exports = async function (req, res) {
       message: "Erro interno",
     });
   }
-};
+}
