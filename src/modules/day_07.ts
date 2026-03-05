@@ -2,7 +2,7 @@ import type { DayModule } from "./index";
 
 const mod: DayModule = {
   title: "Textos fora de contexto",
-  video_url: "https://www.youtube.com/watch?v=3JZ_D3ELwOQ",
+  video_url: "https://www.youtube.com/shorts/zFse7akD6Ig",
   xp_profile: "hard",
   quiz: [
     {

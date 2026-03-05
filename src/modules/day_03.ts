@@ -2,7 +2,7 @@ import type { DayModule } from "./index";
 
 const mod: DayModule = {
   title: "Sinais iniciais de distorção doutrinária",
-  video_url: "https://www.youtube.com/watch?v=y6120QOlsfU",
+  video_url: "https://www.youtube.com/shorts/d2fcET-4vOs",
   xp_profile: "easy",
   quiz: [
     {
