@@ -46,7 +46,7 @@ const Onboarding = () => {
             />
           </div>
           {/* Text and CTA inside card bottom */}
-          <div className="px-6 pt-3 pb-6">
+          <div className="px-6 pt-1 pb-6">
             <h1 className="text-2xl font-extrabold tracking-wide text-white text-center mb-1">SENTINELA</h1>
             <p className="text-sm text-white/80 text-center mb-4">Elite</p>
             <div className="flex items-center justify-center gap-1 mb-4">
@@ -97,9 +97,14 @@ const Onboarding = () => {
                   </>
                 )}
               </Button>
-              <p className="text-[11px] text-white/80 text-center mt-2">
-                acesso liberado com email usado na compra.
-              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled
+                className="rounded-2xl w-full text-white/90 bg-white/10 hover:bg-white/10 cursor-default py-3"
+              >
+                acesso liberado com email usado na compra
+              </Button>
             </div>
           </div>
           {/* Bottom home bar */}
@@ -113,11 +118,10 @@ const Onboarding = () => {
             <div className="h-8 w-8 rounded-xl bg-white/15 flex items-center justify-center">
               <Shield className="h-4 w-4" />
             </div>
-            <span className="text-xs text-white/80">Acesso exclusivo para membros ativos.</span>
+            <span className="text-xs text-white/80">
+              Acesso exclusivo para membros ativos — use o email da compra.
+            </span>
           </div>
-          <p className="mt-1 text-[12px] text-white">
-            acesso liberado com email usado na compra.
-          </p>
         </div>
       </div>
     </div>
