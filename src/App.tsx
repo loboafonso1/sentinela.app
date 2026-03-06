@@ -21,20 +21,27 @@ import MeuPlano from "./pages/MeuPlano";
 
 const queryClient = new QueryClient();
 
-import { checkUserSubscription } from "@/lib/subscriptions";
+import { checkEntitlementByEmail } from "@/lib/subscriptions";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, loading } = useAuth();
-  const uid = user?.id ?? "";
+  const email = user?.email ?? "";
   const { data: hasSub, isLoading } = useQuery({
-    queryKey: ["subscription", uid],
-    queryFn: () => checkUserSubscription(uid),
-    enabled: !!uid,
+    queryKey: ["entitlement", email],
+    queryFn: () => checkEntitlementByEmail(email),
+    enabled: !!email,
     staleTime: 60_000,
   });
   if (loading || isLoading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (!hasSub) return <Navigate to="/assinar" replace />;
+  if (!email) {
+    console.log("ACCESS BLOCKED: no session email");
+    return <Navigate to="/assinar" replace />;
+  }
+  if (!hasSub) {
+    console.log("ACCESS BLOCKED");
+    return <Navigate to="/assinar" replace />;
+  }
   return children;
 };
 
