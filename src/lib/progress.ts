@@ -3,14 +3,32 @@ export type DayRecord = { day: number; completedAt?: number | null; questions: Q
 export type XpLogEntry = { ts: number; delta: number; userId?: string | null; dayId?: number; questionId?: number; attempts?: number };
 export type ProgressStore = { version: 1; days: DayRecord[]; xpTotal: number; streak: number; lastCompletedDay?: number | null; lastCompletedAt?: number | null; xpLog?: XpLogEntry[] };
 
-const KEY = "sentinela_progress_v1";
+const BASE_KEY = "sentinela_progress_v1";
 const TOTAL_DAYS = 30;
 
 import { xpProfileForDay, computeXPForProfile } from "@/modules";
 
+function storageKey(): string {
+  try {
+    const email = (localStorage.getItem("sentinela_email") || "").toLowerCase();
+    return email ? `${BASE_KEY}:${email}` : BASE_KEY;
+  } catch {
+    return BASE_KEY;
+  }
+}
+
 export function loadProgress(): ProgressStore {
   try {
-    const raw = localStorage.getItem(KEY);
+    const key = storageKey();
+    let raw = localStorage.getItem(key);
+    if (!raw) {
+      // migrate legacy global progress into namespaced if applicable
+      const legacy = localStorage.getItem(BASE_KEY);
+      if (legacy) {
+        raw = legacy;
+        try { localStorage.setItem(key, legacy); } catch { void 0; }
+      }
+    }
     if (!raw) {
       return { version: 1, days: [], xpTotal: 0, streak: 0, lastCompletedDay: null, lastCompletedAt: null, xpLog: [] };
     }
@@ -27,7 +45,8 @@ export function loadProgress(): ProgressStore {
 
 export function saveProgress(store: ProgressStore) {
   try {
-    localStorage.setItem(KEY, JSON.stringify(store));
+    const key = storageKey();
+    localStorage.setItem(key, JSON.stringify(store));
   } catch { void 0; }
 }
 

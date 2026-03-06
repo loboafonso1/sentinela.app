@@ -52,6 +52,24 @@ const DailyStudy = () => {
   const navigate = useNavigate();
   const { userData } = useMockData();
   const { signOut } = useAuth();
+  const emailKey = (() => {
+    try { return (localStorage.getItem("sentinela_email") || "").toLowerCase(); } catch { return ""; }
+  })();
+  const K = (k: string) => (emailKey ? `u:${emailKey}:${k}` : k);
+  const lsGet = (k: string) => {
+    try {
+      const v = localStorage.getItem(K(k));
+      if (v !== null) return v;
+      // fallback legacy key (pre-namespace)
+      return localStorage.getItem(k);
+    } catch { return null; }
+  };
+  const lsSet = (k: string, v: string) => {
+    try { localStorage.setItem(K(k), v); } catch { void 0; }
+  };
+  const lsRemove = (k: string) => {
+    try { localStorage.removeItem(K(k)); } catch { void 0; }
+  };
   const handleLogout = async () => {
     await signOut();
     navigate("/");
@@ -70,15 +88,15 @@ const DailyStudy = () => {
     }
   });
   const [videoCompleted, setVideoCompleted] = useState<boolean>(() => {
-    const d = Number(localStorage.getItem("sentinela_last_active_day") || "1") || 1;
-    return localStorage.getItem(`sent_video_day${d}_done`) === "true";
+    const d = Number(lsGet("sentinela_last_active_day") || "1") || 1;
+    return lsGet(`sent_video_day${d}_done`) === "true";
   });
   const [quizCompleted, setQuizCompleted] = useState<boolean>(() => {
-    const d = Number(localStorage.getItem("sentinela_last_active_day") || "1") || 1;
-    return localStorage.getItem(`sent_quiz_day${d}_done`) === "true";
+    const d = Number(lsGet("sentinela_last_active_day") || "1") || 1;
+    return lsGet(`sent_quiz_day${d}_done`) === "true";
   });
   const [nextUnlockAt, setNextUnlockAt] = useState<number | null>(() => {
-    const v = localStorage.getItem("sentinela_next_unlock_at");
+    const v = lsGet("sentinela_next_unlock_at");
     return v ? Number(v) : null;
   });
   const [finalizing, setFinalizing] = useState(false);
@@ -86,7 +104,7 @@ const DailyStudy = () => {
   // Session guard handled by ProtectedRoute in App.tsx
 
   const { formatted: countdownFmt, expired: countdownExpired } = useCountdown(nextUnlockAt);
-  const lastCompletedDay = Number(localStorage.getItem("sentinela_last_completed_day") ?? "0") || 0;
+  const lastCompletedDay = Number(lsGet("sentinela_last_completed_day") ?? "0") || 0;
   const DEV_UNLOCK_MAX = (() => {
     try {
       const local = localStorage.getItem("sent_unlock_max");
@@ -187,9 +205,9 @@ const DailyStudy = () => {
     setVideoCompleted(true);
     setQuizCompleted(false);
     const dayForClose = videoOpenDay ?? effectiveUnlockedDay;
-    try { localStorage.setItem("sentinela_last_active_day", String(dayForClose)); } catch { void 0; }
-    try { localStorage.setItem(`sent_video_day${dayForClose}_done`, "true"); } catch { void 0; }
-    try { localStorage.setItem(`sent_quiz_day${dayForClose}_done`, "false"); } catch { void 0; }
+    lsSet("sentinela_last_active_day", String(dayForClose));
+    lsSet(`sent_video_day${dayForClose}_done`, "true");
+    lsSet(`sent_quiz_day${dayForClose}_done`, "false");
     setTab("aulas");
     setVideoOpenDay(null);
   };
@@ -197,9 +215,9 @@ const DailyStudy = () => {
     if (!isVideoOpen && lastOpenRef.current && !videoCompleted) {
       setVideoCompleted(true);
       setQuizCompleted(false);
-      try { localStorage.setItem("sentinela_last_active_day", String(effectiveUnlockedDay)); } catch { void 0; }
-      try { localStorage.setItem(`sent_video_day${effectiveUnlockedDay}_done`, "true"); } catch { void 0; }
-      try { localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "false"); } catch { void 0; }
+      lsSet("sentinela_last_active_day", String(effectiveUnlockedDay));
+      lsSet(`sent_video_day${effectiveUnlockedDay}_done`, "true");
+      lsSet(`sent_quiz_day${effectiveUnlockedDay}_done`, "false");
       setTab("aulas");
       lastOpenRef.current = null;
     }
@@ -209,15 +227,15 @@ const DailyStudy = () => {
 
   const onQuizComplete = () => {
     setQuizCompleted(true);
-    try { localStorage.setItem(`sent_quiz_day${effectiveUnlockedDay}_done`, "true"); } catch { void 0; }
+    lsSet(`sent_quiz_day${effectiveUnlockedDay}_done`, "true");
     finalizeDayProgress(effectiveUnlockedDay);
   };
 
   const finalizeDay = () => {
     setFinalizing(true);
     const target = getNextLocalMidnight();
-    try { localStorage.setItem("sentinela_next_unlock_at", String(target)); } catch { void 0; }
-    try { localStorage.setItem("sentinela_last_completed_day", String(effectiveUnlockedDay)); } catch { void 0; }
+    lsSet("sentinela_next_unlock_at", String(target));
+    lsSet("sentinela_last_completed_day", String(effectiveUnlockedDay));
     setNextUnlockAt(target);
     setTimeout(() => setFinalizing(false), 700);
   };
