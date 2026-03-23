@@ -26,16 +26,22 @@ const IASelection = () => {
   const handleStart = async () => {
     setHasStarted(true);
     
-    // Iniciar vídeo
+    // Iniciar vídeo COM SOM na primeira vez
     if (videoRef.current) {
       try {
+        videoRef.current.muted = false; // Desmuta para a introdução
         await videoRef.current.play();
+        setIsPlaying(true);
       } catch (e) {
         console.warn("Erro ao iniciar vídeo:", e);
       }
     }
 
-    // Iniciar áudio de introdução
+    // O vídeo agora serve como introdução sonora. 
+    // Quando ele terminar a primeira execução (ou após o tempo do ia_intro), 
+    // ele deve ficar mudo e entrar em loop, e os botões devem aparecer.
+    
+    // Se você ainda quiser usar o arquivo ia_intro.mp3 separado, ele tocará aqui:
     const introAudio = new Audio("/audio/ia_intro.mp3");
     audioRef.current = introAudio;
     
@@ -46,10 +52,15 @@ const IASelection = () => {
       introAudio.onended = () => {
         setIsPlaying(false);
         setShowButtons(true);
+        if (videoRef.current) videoRef.current.muted = true; // Volta a ficar mudo após a intro
       };
     } catch (e) {
-      console.warn("Áudio não encontrado ou bloqueado. Mostrando botões.");
-      setShowButtons(true);
+      // Se não houver áudio externo, usamos um timer baseado no vídeo ou fixo
+      setTimeout(() => {
+        setShowButtons(true);
+        setIsPlaying(false);
+        if (videoRef.current) videoRef.current.muted = true; // Fica mudo para o loop de espera
+      }, 5000); // Exemplo: 5 segundos de fala inicial
     }
   };
 
@@ -134,12 +145,11 @@ const IASelection = () => {
                 src="/video/ia_avatar.mp4"
                 autoPlay
                 loop
-                muted
                 playsInline
                 className={`min-w-full min-h-full object-cover pointer-events-none transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
                 onCanPlay={() => {
                   setVideoLoaded(true);
-                  if (videoRef.current) {
+                  if (videoRef.current && hasStarted) {
                     videoRef.current.play().catch(e => console.warn("Erro ao forçar autoplay:", e));
                   }
                 }}
