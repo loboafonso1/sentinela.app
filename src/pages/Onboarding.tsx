@@ -10,6 +10,14 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/estudos");
+      }
+    });
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-fuchsia-800 via-purple-700 to-pink-600 text-primary-foreground flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-md">

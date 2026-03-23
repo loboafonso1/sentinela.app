@@ -20,15 +20,11 @@ const themes = [
 
 const Configuracoes = () => {
   const navigate = useNavigate();
-  const { user, loading, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { userData, updateName, resetApp } = useMockData();
   const [name, setName] = useState(userData.name);
   const { theme, setTheme } = useTheme();
   const [autoStart, setAutoStart] = useState(localStorage.getItem("sentinela_autostart_treino") === "true");
-
-  useEffect(() => {
-    if (!loading && !user) navigate("/login");
-  }, [navigate, loading, user]);
 
   const handleSaveName = () => {
     if (name.trim()) updateName(name.trim());

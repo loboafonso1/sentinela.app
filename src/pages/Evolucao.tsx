@@ -17,10 +17,6 @@ const Evolucao = () => {
   const total =
     period === "Dia" ? aggr.dayTotal : period === "Semana" ? aggr.weekTotal : period === "Mês" ? aggr.monthTotal : aggr.yearTotal;
 
-  useEffect(() => {
-    if (!localStorage.getItem("sentinela_logged_in")) navigate("/login");
-  }, [navigate]);
-
   const xpPercent = Math.round((userData.xp / userData.xpNextLevel) * 100);
   const arcAngle = (xpPercent / 100) * 180;
 

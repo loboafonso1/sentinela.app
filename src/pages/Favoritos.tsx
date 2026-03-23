@@ -56,10 +56,6 @@ const Favoritos = () => {
   const [ids, setIds] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!localStorage.getItem("sentinela_logged_in")) navigate("/login");
-  }, [navigate]);
-
-  useEffect(() => {
     setIds(loadFavorites());
   }, []);
 

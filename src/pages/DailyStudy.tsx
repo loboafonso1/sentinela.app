@@ -116,13 +116,8 @@ const DailyStudy = () => {
     return NaN;
   })();
   const devUnlockActive = Number.isFinite(DEV_UNLOCK_MAX) && DEV_UNLOCK_MAX >= 1;
-  const effectiveUnlockedDay = devUnlockActive
-    ? Math.min(DEV_UNLOCK_MAX, 7)
-    : lastCompletedDay >= 1
-      ? (countdownExpired ? Math.max(unlockedDay, lastCompletedDay + 1) : Math.max(unlockedDay, lastCompletedDay))
-      : unlockedDay;
-  const [selectedDay, setSelectedDay] = useState<number>(effectiveUnlockedDay);
-  useEffect(() => { setSelectedDay(effectiveUnlockedDay); }, [effectiveUnlockedDay]);
+  const effectiveUnlockedDay = 30; // Desbloqueado para teste e conforme solicitação do usuário
+  const [selectedDay, setSelectedDay] = useState<number>(1);
   const currentVideo = dailyVideos[selectedDay - 1] ?? dailyVideos[0];
   const currentModule = getDayModule(selectedDay);
   const displayTitle = `Dia ${selectedDay} — ${lessons[selectedDay - 1]?.title ?? currentVideo.title ?? "Aula"}`;

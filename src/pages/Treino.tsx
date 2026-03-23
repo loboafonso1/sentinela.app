@@ -21,10 +21,6 @@ const Treino = () => {
   const [showReward, setShowReward] = useState(false);
 
   useEffect(() => {
-    if (!localStorage.getItem("sentinela_logged_in")) navigate("/login");
-  }, [navigate]);
-
-  useEffect(() => {
     const autostart = localStorage.getItem("sentinela_autostart_treino") === "true";
     if (autostart && !userData.todayCompleted) setStarted(true);
   }, [userData.todayCompleted]);

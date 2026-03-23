@@ -11,10 +11,6 @@ const Resumo = () => {
   const { userData } = useMockData();
   const xpPercent = Math.round((userData.xp / userData.xpNextLevel) * 100);
 
-  useEffect(() => {
-    if (!localStorage.getItem("sentinela_logged_in")) navigate("/login");
-  }, [navigate]);
-
   return (
     <div className="min-h-screen bg-background pb-24">
       <header className="px-responsive pt-6 pb-2">

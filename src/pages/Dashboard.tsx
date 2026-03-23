@@ -14,10 +14,6 @@ const Dashboard = () => {
   const weeklyData = useWeeklyFromProgress();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!localStorage.getItem("sentinela_logged_in")) navigate("/login");
-  }, [navigate]);
-
   const xpPercent = Math.round((userData.xp / userData.xpNextLevel) * 100);
   const getCtaLabel = () => {
     if (userData.todayCompleted) return "Concluído Hoje";
