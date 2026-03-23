@@ -26,7 +26,19 @@ const IASelection = () => {
     audioRef.current = introAudio;
     setIsPlaying(true);
     
-    introAudio.play().catch(e => console.error("Erro ao reproduzir áudio:", e));
+    const playAudio = async () => {
+      try {
+        await introAudio.play();
+      } catch (e) {
+        console.warn("Autoplay bloqueado pelo navegador. Aguardando interação para liberar botões.");
+        // Se o autoplay falhar (comum em navegadores), mostramos os botões após um tempo
+        // ou permitimos que o usuário clique em algo para iniciar
+        setShowButtons(true);
+        setIsPlaying(false);
+      }
+    };
+
+    playAudio();
     
     introAudio.onended = () => {
       setIsPlaying(false);
@@ -71,15 +83,20 @@ const IASelection = () => {
 
   return (
     <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col items-center justify-center overflow-hidden">
+      {/* Texto de fallback caso o vídeo não carregue ou demore */}
+      {!showButtons && !isPlaying && (
+        <div className="absolute top-10 text-white/20 text-xs uppercase tracking-[0.2em] animate-pulse">
+          Iniciando Interface...
+        </div>
+      )}
+
       {/* Avatar IA em loop */}
-      <div className="relative w-64 h-64 md:w-96 md:h-96">
+      <div className="relative w-64 h-64 md:w-96 md:h-96 z-10">
         <motion.div
           animate={isPlaying ? {
             scale: [1, 1.05, 1],
-            opacity: [0.8, 1, 0.8]
           } : {
             scale: 1,
-            opacity: 0.8
           }}
           transition={{
             duration: 2,
@@ -94,13 +111,15 @@ const IASelection = () => {
             loop
             muted
             playsInline
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain pointer-events-none"
+            onCanPlayThrough={() => console.log("Vídeo carregado e pronto")}
+            onError={(e) => console.error("Erro ao carregar vídeo:", e)}
           />
         </motion.div>
       </div>
 
       {/* Botões de Seleção */}
-      <div className="absolute bottom-12 w-full max-w-lg px-6">
+      <div className="absolute bottom-12 w-full max-w-lg px-6 z-20">
         <AnimatePresence>
           {showButtons && (
             <motion.div
