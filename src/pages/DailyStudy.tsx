@@ -116,7 +116,7 @@ const DailyStudy = () => {
     return NaN;
   })();
   const devUnlockActive = Number.isFinite(DEV_UNLOCK_MAX) && DEV_UNLOCK_MAX >= 1;
-  const effectiveUnlockedDay = 30; // Desbloqueado para teste e conforme solicitação do usuário
+  const effectiveUnlockedDay = 30;
   const [selectedDay, setSelectedDay] = useState<number>(1);
   const currentVideo = dailyVideos[selectedDay - 1] ?? dailyVideos[0];
   const currentModule = getDayModule(selectedDay);
@@ -199,10 +199,6 @@ const DailyStudy = () => {
     setIsVideoOpen(false);
     setVideoCompleted(true);
     setQuizCompleted(false);
-    const dayForClose = videoOpenDay ?? effectiveUnlockedDay;
-    lsSet("sentinela_last_active_day", String(dayForClose));
-    lsSet(`sent_video_day${dayForClose}_done`, "true");
-    lsSet(`sent_quiz_day${dayForClose}_done`, "false");
     setTab("aulas");
     setVideoOpenDay(null);
   };
@@ -210,9 +206,6 @@ const DailyStudy = () => {
     if (!isVideoOpen && lastOpenRef.current && !videoCompleted) {
       setVideoCompleted(true);
       setQuizCompleted(false);
-      lsSet("sentinela_last_active_day", String(effectiveUnlockedDay));
-      lsSet(`sent_video_day${effectiveUnlockedDay}_done`, "true");
-      lsSet(`sent_quiz_day${effectiveUnlockedDay}_done`, "false");
       setTab("aulas");
       lastOpenRef.current = null;
     }
@@ -222,17 +215,19 @@ const DailyStudy = () => {
 
   const onQuizComplete = () => {
     setQuizCompleted(true);
-    lsSet(`sent_quiz_day${effectiveUnlockedDay}_done`, "true");
-    finalizeDayProgress(effectiveUnlockedDay);
+    finalizeDayProgress(selectedDay);
   };
 
   const finalizeDay = () => {
+    // Sistema de trava diária removido.
     setFinalizing(true);
-    const target = getNextLocalMidnight();
-    lsSet("sentinela_next_unlock_at", String(target));
-    lsSet("sentinela_last_completed_day", String(effectiveUnlockedDay));
-    setNextUnlockAt(target);
-    setTimeout(() => setFinalizing(false), 700);
+    setTimeout(() => {
+      setFinalizing(false);
+      if (selectedDay < 30) {
+        setSelectedDay(prev => prev + 1);
+        setTab("video");
+      }
+    }, 700);
   };
 
   const day1Questions: QuizQuestion[] = [

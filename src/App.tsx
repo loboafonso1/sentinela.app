@@ -25,23 +25,8 @@ import { checkEntitlementByEmail } from "@/lib/subscriptions";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, loading } = useAuth();
-  const email = user?.email ?? "";
-  const { data: hasSub, isLoading } = useQuery({
-    queryKey: ["entitlement", email],
-    queryFn: () => checkEntitlementByEmail(email),
-    enabled: !!email,
-    staleTime: 60_000,
-  });
-  if (loading || isLoading) return null;
+  if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (!email) {
-    console.log("ACCESS BLOCKED: no session email");
-    return <Navigate to="/assinar" replace />;
-  }
-  if (!hasSub) {
-    console.log("ACCESS BLOCKED");
-    return <Navigate to="/assinar" replace />;
-  }
   return children;
 };
 
