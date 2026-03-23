@@ -323,18 +323,36 @@ const IASelection = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.15, duration: 0.6, ease: "easeOut" }}
                       onClick={() => handleLevelSelect(level)}
-                      style={{ 
-                        boxShadow: `0 0 20px ${level.color}22, inset 0 0 12px ${level.color}11`,
-                        borderColor: `${level.color}44`
+                      whileHover={{ 
+                        backgroundColor: `${level.color}22`,
+                        borderColor: `${level.color}88`,
+                        boxShadow: `0 0 30px ${level.color}44, inset 0 0 15px ${level.color}22`
                       }}
-                      className="w-full py-4 px-8 bg-black/40 border-2 rounded-full text-white flex items-center gap-5 group hover:bg-black/60 hover:border-white/30 transition-all active:scale-[0.98] backdrop-blur-xl"
+                      whileTap={{ 
+                        scale: 0.95,
+                        backgroundColor: level.color,
+                        borderColor: "#FFFFFF",
+                        boxShadow: `0 0 40px ${level.color}88`
+                      }}
+                      className="w-full py-4 px-8 bg-black/40 border-2 rounded-full text-white flex items-center gap-5 group transition-all backdrop-blur-xl"
                     >
-                      <div style={{ color: level.color }} className="drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">
+                      <motion.div 
+                        style={{ color: level.color }} 
+                        variants={{
+                          tap: { color: "#FFFFFF" }
+                        }}
+                        className="drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
+                      >
                         {level.icon}
-                      </div>
-                      <span className="tracking-[0.3em] uppercase text-[10px] font-bold text-white/80 group-hover:text-white transition-colors">
+                      </motion.div>
+                      <motion.span 
+                        variants={{
+                          tap: { color: "#FFFFFF" }
+                        }}
+                        className="tracking-[0.3em] uppercase text-[10px] font-bold text-white/80 group-hover:text-white transition-colors"
+                      >
                         {level.label}
-                      </span>
+                      </motion.span>
                       <div className="ml-auto opacity-0 group-hover:opacity-40 transition-opacity">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                       </div>
