@@ -106,13 +106,15 @@ const IASelection = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#050505] flex flex-col items-center justify-center overflow-hidden text-white font-sans selection:bg-purple-500/20">
+    <div className="fixed inset-0 bg-[#0A0014] flex flex-col items-center justify-center overflow-hidden text-white font-sans selection:bg-purple-500/20">
       {/* Efeito de Ruído Digital Sutil */}
       <div className="absolute inset-0 opacity-[0.02] pointer-events-none z-50 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       
-      {/* Gradiente Roxo Sutil nas Bordas */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(88,28,135,0.05)_100%)] z-0" />
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black z-0" />
+      {/* Gradiente Vibrante de Fundo conforme referência */}
+      <div className="absolute inset-0 bg-[#4C00B0] z-0" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,_#0A0014_0%,_transparent_70%)] z-1" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_100%,_#7A00FF_0%,_transparent_60%)] opacity-60 z-1" />
+      <div className="absolute inset-0 bg-black/20 z-1" />
 
       {!hasStarted ? (
         <div className="z-50 flex flex-col items-center justify-between h-full py-20 px-6 w-full max-w-lg">
@@ -120,7 +122,7 @@ const IASelection = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ 
-              opacity: [0.3, 0.5, 0.3],
+              opacity: [0.6, 0.9, 0.6],
               scale: [0.99, 1, 0.99]
             }}
             transition={{ 
@@ -130,8 +132,8 @@ const IASelection = () => {
             }}
             className="text-center relative"
           >
-            <h2 className="text-[10px] font-light tracking-[0.6em] uppercase text-white/40 mb-2">Interface</h2>
-            <h1 className="text-4xl font-serif font-bold tracking-[0.4em] uppercase bg-gradient-to-b from-white via-white to-white/30 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(168,85,247,0.15)]">
+            <h2 className="text-[10px] font-light tracking-[0.6em] uppercase text-white/60 mb-2">Interface</h2>
+            <h1 className="text-4xl font-serif font-bold tracking-[0.4em] uppercase bg-gradient-to-b from-white via-white to-white/60 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
               Sentinela
             </h1>
           </motion.div>
@@ -147,21 +149,21 @@ const IASelection = () => {
                 transition={{ duration: 1.5 }}
                 className="text-center"
               >
-                <p className="text-xl font-light tracking-[0.2em] text-purple-400/90 drop-shadow-[0_0_8px_rgba(168,85,247,0.3)]">
+                <p className="text-xl font-light tracking-[0.2em] text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]">
                   {loadingPhrases[loadingPhraseIndex]}
                   <motion.span
                     animate={{ opacity: [0, 1, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
-                    className="inline-block ml-2 w-0.5 h-6 bg-purple-500/50 align-middle"
+                    className="inline-block ml-2 w-0.5 h-6 bg-white/60 align-middle"
                   />
                 </p>
               </motion.div>
             </AnimatePresence>
             
             <motion.p 
-              animate={{ opacity: [0.15, 0.3, 0.15] }}
+              animate={{ opacity: [0.2, 0.5, 0.2] }}
               transition={{ duration: 3, repeat: Infinity }}
-              className="text-[9px] text-white/20 uppercase tracking-[0.5em]"
+              className="text-[9px] text-white/40 uppercase tracking-[0.5em]"
             >
               Aguardando Ativação
             </motion.p>
@@ -172,7 +174,7 @@ const IASelection = () => {
             <button
               onClick={handleStart}
               disabled={isConnecting}
-              className="group relative w-full py-7 bg-gradient-to-br from-purple-900/40 to-purple-600/20 border border-purple-500/20 rounded-2xl overflow-hidden transition-all duration-700 hover:from-purple-800/50 hover:to-purple-500/40 hover:border-purple-400/40 active:scale-[0.97] shadow-[0_0_25px_rgba(147,51,234,0.1)] hover:shadow-[0_0_40px_rgba(147,51,234,0.25)]"
+              className="group relative w-full py-7 bg-white/10 border border-white/20 rounded-2xl overflow-hidden transition-all duration-700 hover:bg-white/20 hover:border-white/40 active:scale-[0.97] shadow-[0_0_30px_rgba(255,255,255,0.05)] hover:shadow-[0_0_50px_rgba(255,255,255,0.1)] backdrop-blur-md"
             >
               <AnimatePresence mode="wait">
                 {!isConnecting ? (
@@ -185,10 +187,10 @@ const IASelection = () => {
                   >
                     <span className="text-sm font-bold tracking-[0.4em] uppercase text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">Iniciar Conexão</span>
                     <motion.div
-                      animate={{ x: [0, 4, 0], opacity: [0.3, 0.7, 0.3] }}
+                      animate={{ x: [0, 4, 0], opacity: [0.5, 1, 0.5] }}
                       transition={{ duration: 2.5, repeat: Infinity }}
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </motion.div>
                   </motion.div>
                 ) : (
@@ -199,15 +201,15 @@ const IASelection = () => {
                     exit={{ opacity: 0 }}
                     className="flex items-center justify-center gap-4"
                   >
-                    <div className="w-5 h-5 border-2 border-white/10 border-t-purple-400 rounded-full animate-spin" />
-                    <span className="text-sm font-bold tracking-[0.4em] uppercase text-purple-200">Conectando</span>
+                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <span className="text-sm font-bold tracking-[0.4em] uppercase text-white">Conectando</span>
                   </motion.div>
                 )}
               </AnimatePresence>
               
               {/* Efeito de Brilho de Energia */}
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(168,85,247,0.15)_0%,_transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent -translate-x-full group-hover:animate-[shimmer_4s_infinite] pointer-events-none" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(255,255,255,0.1)_0%,_transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.1] to-transparent -translate-x-full group-hover:animate-[shimmer_4s_infinite] pointer-events-none" />
             </button>
           </div>
         </div>
