@@ -21,20 +21,23 @@ const IASelection = () => {
   ];
 
   useEffect(() => {
-    // Tocar áudio de introdução ao entrar
+    // Se o áudio ainda não existe, mostramos os botões após um pequeno delay para o vídeo carregar
+    const timer = setTimeout(() => {
+      setShowButtons(true);
+    }, 2000);
+
     const introAudio = new Audio("/audio/ia_intro.mp3");
     audioRef.current = introAudio;
-    setIsPlaying(true);
     
     const playAudio = async () => {
       try {
         await introAudio.play();
+        setIsPlaying(true);
+        // Se o áudio tocar, cancelamos o timer e esperamos ele acabar para mostrar os botões
+        clearTimeout(timer);
+        setShowButtons(false);
       } catch (e) {
-        console.warn("Autoplay bloqueado pelo navegador. Aguardando interação para liberar botões.");
-        // Se o autoplay falhar (comum em navegadores), mostramos os botões após um tempo
-        // ou permitimos que o usuário clique em algo para iniciar
-        setShowButtons(true);
-        setIsPlaying(false);
+        console.warn("Áudio não encontrado ou bloqueado. Seguindo apenas com vídeo.");
       }
     };
 
@@ -46,6 +49,7 @@ const IASelection = () => {
     };
 
     return () => {
+      clearTimeout(timer);
       introAudio.pause();
       introAudio.onended = null;
     };
@@ -83,18 +87,11 @@ const IASelection = () => {
 
   return (
     <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col items-center justify-center overflow-hidden">
-      {/* Texto de fallback caso o vídeo não carregue ou demore */}
-      {!showButtons && !isPlaying && (
-        <div className="absolute top-10 text-white/20 text-xs uppercase tracking-[0.2em] animate-pulse">
-          Iniciando Interface...
-        </div>
-      )}
-
       {/* Avatar IA em loop */}
-      <div className="relative w-64 h-64 md:w-96 md:h-96 z-10">
+      <div className="relative w-full h-full flex items-center justify-center z-10">
         <motion.div
           animate={isPlaying ? {
-            scale: [1, 1.05, 1],
+            scale: [1, 1.02, 1],
           } : {
             scale: 1,
           }}
@@ -111,12 +108,15 @@ const IASelection = () => {
             loop
             muted
             playsInline
-            className="w-full h-full object-contain pointer-events-none"
+            className="min-w-full min-h-full object-cover pointer-events-none"
             onCanPlayThrough={() => console.log("Vídeo carregado e pronto")}
             onError={(e) => console.error("Erro ao carregar vídeo:", e)}
           />
         </motion.div>
       </div>
+
+      {/* Camada de Gradiente para escurecer a base e facilitar a leitura dos botões */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-15 pointer-events-none" />
 
       {/* Botões de Seleção */}
       <div className="absolute bottom-12 w-full max-w-lg px-6 z-20">
