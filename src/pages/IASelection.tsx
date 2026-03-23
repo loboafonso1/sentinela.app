@@ -174,7 +174,7 @@ const IASelection = () => {
             <button
               onClick={handleStart}
               disabled={isConnecting}
-              className="group relative w-full py-7 bg-white/10 border border-white/20 rounded-2xl overflow-hidden transition-all duration-700 hover:bg-white/20 hover:border-white/40 active:scale-[0.97] shadow-[0_0_30px_rgba(255,255,255,0.05)] hover:shadow-[0_0_50px_rgba(255,255,255,0.1)] backdrop-blur-md"
+              className="group relative w-full py-7 bg-gradient-to-r from-[#FF00D9]/20 via-[#00F2FF]/20 to-[#FF00D9]/20 border border-white/10 rounded-2xl overflow-hidden transition-all duration-700 hover:border-white/30 active:scale-[0.97] shadow-[0_0_30px_rgba(255,255,255,0.05)] hover:shadow-[0_0_50px_rgba(255,255,255,0.1)] backdrop-blur-xl"
             >
               <AnimatePresence mode="wait">
                 {!isConnecting ? (
@@ -207,8 +207,12 @@ const IASelection = () => {
                 )}
               </AnimatePresence>
               
-              {/* Efeito de Brilho de Energia */}
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(255,255,255,0.1)_0%,_transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+              {/* Efeito de Reflexo de Borda (Glow nas pontas conforme referência) */}
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#00F2FF] to-transparent opacity-40" />
+              <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#FF00D9] to-transparent opacity-40" />
+              
+              {/* Brilho de Energia Interno */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#FF00D9]/10 via-[#00F2FF]/10 to-[#FF00D9]/10 opacity-50" />
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.1] to-transparent -translate-x-full group-hover:animate-[shimmer_4s_infinite] pointer-events-none" />
             </button>
           </div>
