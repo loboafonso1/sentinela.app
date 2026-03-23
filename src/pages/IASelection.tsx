@@ -192,9 +192,9 @@ const IASelection = () => {
             </AnimatePresence>
             
             <motion.p 
-              animate={{ opacity: [0.2, 0.5, 0.2] }}
-              transition={{ duration: 3, repeat: Infinity }}
-              className="text-[9px] text-white/40 uppercase tracking-[0.5em]"
+              animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.05, 1] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="text-[11px] font-medium text-white/70 uppercase tracking-[0.6em] drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]"
             >
               Aguardando Ativação
             </motion.p>
