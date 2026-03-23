@@ -35,7 +35,9 @@ const IASelection = () => {
 
         const handleFirstPlayEnd = () => {
           if (videoRef.current) {
-            videoRef.current.muted = true;
+            videoRef.current.muted = true; // Muta o vídeo para o loop de espera
+            videoRef.current.loop = true;  // Ativa o loop agora
+            videoRef.current.play().catch(e => console.warn("Erro ao reiniciar em loop:", e));
           }
           setIsPlaying(false);
           setShowButtons(true);
@@ -131,7 +133,6 @@ const IASelection = () => {
                 ref={videoRef}
                 src="/video/ia_avatar.mp4"
                 autoPlay
-                loop
                 playsInline
                 className={`min-w-full min-h-full object-cover pointer-events-none transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
                 onCanPlay={() => {
