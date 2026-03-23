@@ -10,7 +10,9 @@ const IASelection = () => {
   const [showButtons, setShowButtons] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const levels = [
     { id: "iniciante", label: "Iniciante", audio: "/audio/ia_resposta_iniciante.mp3" },
@@ -21,10 +23,15 @@ const IASelection = () => {
   ];
 
   useEffect(() => {
-    // Se o áudio ainda não existe, mostramos os botões após um pequeno delay para o vídeo carregar
+    // Tentar forçar o play do vídeo
+    if (videoRef.current) {
+      videoRef.current.play().catch(e => console.warn("Erro ao iniciar vídeo:", e));
+    }
+
+    // Se o áudio ainda não existe, mostramos os botões após um pequeno delay
     const timer = setTimeout(() => {
       setShowButtons(true);
-    }, 2000);
+    }, 2500);
 
     const introAudio = new Audio("/audio/ia_intro.mp3");
     audioRef.current = introAudio;
@@ -33,11 +40,10 @@ const IASelection = () => {
       try {
         await introAudio.play();
         setIsPlaying(true);
-        // Se o áudio tocar, cancelamos o timer e esperamos ele acabar para mostrar os botões
         clearTimeout(timer);
         setShowButtons(false);
       } catch (e) {
-        console.warn("Áudio não encontrado ou bloqueado. Seguindo apenas com vídeo.");
+        console.warn("Áudio não encontrado ou bloqueado.");
       }
     };
 
@@ -61,7 +67,6 @@ const IASelection = () => {
     setSelectedLevel(level.id);
     setShowButtons(false);
     
-    // Salvar no banco de dados
     if (user) {
       await supabase
         .from("profiles")
@@ -69,7 +74,6 @@ const IASelection = () => {
         .eq("id", user.id);
     }
 
-    // Delay curto antes da resposta
     setTimeout(() => {
       const responseAudio = new Audio(level.audio);
       audioRef.current = responseAudio;
@@ -79,7 +83,6 @@ const IASelection = () => {
       
       responseAudio.onended = () => {
         setIsPlaying(false);
-        // Redirecionar para a próxima tela após o áudio
         navigate("/proxima-etapa"); 
       };
     }, 500);
@@ -87,11 +90,18 @@ const IASelection = () => {
 
   return (
     <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col items-center justify-center overflow-hidden">
+      {/* Indicador de carregamento caso o vídeo demore */}
+      {!videoLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center z-0">
+          <div className="w-8 h-8 border-2 border-white/10 border-t-white/50 rounded-full animate-spin" />
+        </div>
+      )}
+
       {/* Avatar IA em loop */}
       <div className="relative w-full h-full flex items-center justify-center z-10">
         <motion.div
           animate={isPlaying ? {
-            scale: [1, 1.02, 1],
+            scale: [1, 1.03, 1],
           } : {
             scale: 1,
           }}
@@ -103,20 +113,25 @@ const IASelection = () => {
           className="w-full h-full flex items-center justify-center"
         >
           <video
+            ref={videoRef}
             src="/video/ia_avatar.mp4"
             autoPlay
             loop
             muted
             playsInline
-            className="min-w-full min-h-full object-cover pointer-events-none"
-            onCanPlayThrough={() => console.log("Vídeo carregado e pronto")}
-            onError={(e) => console.error("Erro ao carregar vídeo:", e)}
+            className={`min-w-full min-h-full object-cover pointer-events-none transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onCanPlay={() => setVideoLoaded(true)}
+            onError={(e) => {
+              console.error("Erro no vídeo:", e);
+              // Fallback caso o vídeo falhe: mostrar botões direto
+              setShowButtons(true);
+            }}
           />
         </motion.div>
       </div>
 
-      {/* Camada de Gradiente para escurecer a base e facilitar a leitura dos botões */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-15 pointer-events-none" />
+      {/* Gradiente para facilitar leitura */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 z-15 pointer-events-none" />
 
       {/* Botões de Seleção */}
       <div className="absolute bottom-12 w-full max-w-lg px-6 z-20">
