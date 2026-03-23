@@ -9,10 +9,6 @@ const MeuPlano = () => {
   const { completedCount, totalModules, overallProgress, getLevel, getStreak, progress } = useModuleProgress();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!localStorage.getItem("sentinela_user_name")) navigate("/login");
-  }, [navigate]);
-
   const level = getLevel();
   const streak = getStreak();
   const totalQuizScore = progress.filter(p => p.completed && p.quiz_score !== null).reduce((sum, p) => sum + (p.quiz_score || 0), 0);

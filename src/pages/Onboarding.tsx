@@ -70,7 +70,7 @@ const Onboarding = () => {
                     setGoogleLoading(true);
                     const { data, error } = await supabase.auth.signInWithOAuth({
                       provider: "google",
-                      options: { redirectTo: "https://sentinela-app-eight.vercel.app/auth/callback" }
+                      options: { redirectTo: `${window.location.origin}/auth/callback` }
                     });
                     if (error || !data?.url) {
                       toast.info("Login com Google ainda não está habilitado.");

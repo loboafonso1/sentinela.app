@@ -15,7 +15,7 @@ const Login = () => {
       setGoogleLoading(true);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/#/auth/callback` }
+        options: { redirectTo: `${window.location.origin}/auth/callback` }
       });
       if (error) {
         toast.info("Login com Google ainda não está habilitado.");
