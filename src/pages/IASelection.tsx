@@ -279,7 +279,7 @@ const IASelection = () => {
             >
               <video
                 ref={videoRef}
-                src="/video/ia_avatar.mp4"
+                src={`/video/ia_avatar.mp4?v=${Date.now()}`}
                 autoPlay
                 playsInline
                 className={`min-w-full min-h-full object-cover pointer-events-none transition-opacity duration-1500 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
