@@ -132,11 +132,17 @@ const IASelection = () => {
               <video
                 ref={videoRef}
                 src="/video/ia_avatar.mp4"
+                autoPlay
                 loop
                 muted
                 playsInline
                 className={`min-w-full min-h-full object-cover pointer-events-none transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
-                onCanPlay={() => setVideoLoaded(true)}
+                onCanPlay={() => {
+                  setVideoLoaded(true);
+                  if (videoRef.current) {
+                    videoRef.current.play().catch(e => console.warn("Erro ao forçar autoplay:", e));
+                  }
+                }}
                 onError={(e) => {
                   console.error("Erro no vídeo (tentando /video/ia_avatar.mp4):", e);
                   setShowButtons(true);
