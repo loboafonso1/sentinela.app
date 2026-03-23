@@ -25,11 +25,11 @@ const IASelection = () => {
   ];
 
   const levels = [
-    { id: "iniciante", label: "Iniciante", audio: "/audio/ia_resposta_iniciante.mp3", color: "from-blue-600/20 to-blue-900/40", borderColor: "border-blue-500/30" },
-    { id: "observador", label: "Observador", audio: "/audio/ia_resposta_observador.mp3", color: "from-emerald-600/20 to-emerald-900/40", borderColor: "border-emerald-500/30" },
-    { id: "analista", label: "Analista", audio: "/audio/ia_resposta_analista.mp3", color: "from-amber-600/20 to-amber-900/40", borderColor: "border-amber-500/30" },
-    { id: "investigador", label: "Investigador", audio: "/audio/ia_resposta_investigador.mp3", color: "from-purple-600/20 to-purple-900/40", borderColor: "border-purple-500/30" },
-    { id: "especialista", label: "Especialista", audio: "/audio/ia_resposta_especialista.mp3", color: "from-rose-600/20 to-rose-900/40", borderColor: "border-rose-500/30" },
+    { id: "iniciante", label: "Iniciante", audio: "/audio/ia_resposta_iniciante.mp3", color: "from-[#00F2FF]/20 to-[#FF00D9]/40", borderColor: "border-[#00F2FF]/30" },
+    { id: "observador", label: "Observador", audio: "/audio/ia_resposta_observador.mp3", color: "from-[#00F2FF]/20 to-[#FF00D9]/40", borderColor: "border-[#00F2FF]/30" },
+    { id: "analista", label: "Analista", audio: "/audio/ia_resposta_analista.mp3", color: "from-[#00F2FF]/20 to-[#FF00D9]/40", borderColor: "border-[#00F2FF]/30" },
+    { id: "investigador", label: "Investigador", audio: "/audio/ia_resposta_investigador.mp3", color: "from-[#00F2FF]/20 to-[#FF00D9]/40", borderColor: "border-[#00F2FF]/30" },
+    { id: "especialista", label: "Especialista", audio: "/audio/ia_resposta_especialista.mp3", color: "from-[#00F2FF]/20 to-[#FF00D9]/40", borderColor: "border-[#00F2FF]/30" },
   ];
 
   useEffect(() => {
@@ -169,7 +169,7 @@ const IASelection = () => {
             <button
               onClick={handleStart}
               disabled={isConnecting}
-              className="group relative w-full py-6 bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden transition-all duration-500 hover:bg-white/[0.05] hover:border-white/20 active:scale-[0.98] shadow-[0_0_20px_rgba(255,255,255,0.02)] hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]"
+              className="group relative w-full py-6 bg-gradient-to-r from-[#00F2FF]/10 to-[#FF00D9]/10 border border-[#00F2FF]/20 rounded-2xl overflow-hidden transition-all duration-500 hover:from-[#00F2FF]/20 hover:to-[#FF00D9]/20 hover:border-[#00F2FF]/40 active:scale-[0.98] shadow-[0_0_20px_rgba(0,242,255,0.05)] hover:shadow-[0_0_30px_rgba(0,242,255,0.15)]"
             >
               <AnimatePresence mode="wait">
                 {!isConnecting ? (
