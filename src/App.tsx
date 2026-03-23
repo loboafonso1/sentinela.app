@@ -12,16 +12,11 @@ import Bloqueio from "./pages/Bloqueio";
 import NotFound from "./pages/NotFound";
 import Favoritos from "./pages/Favoritos";
 import Onboarding from "./pages/Onboarding";
-import DailyStudy from "./pages/DailyStudy";
-import Resumo from "./pages/Resumo";
+import IASelection from "./pages/IASelection";
 import AuthCallback from "./pages/AuthCallback";
 import { useAuth } from "./hooks/useAuth";
-import PreviewLessons from "./pages/PreviewLessons";
-import MeuPlano from "./pages/MeuPlano";
 
 const queryClient = new QueryClient();
-
-import { checkEntitlementByEmail } from "@/lib/subscriptions";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, loading } = useAuth();
@@ -40,23 +35,7 @@ const App = () => (
           <Route path="/" element={<Onboarding />} />
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/estudos" element={<ProtectedRoute><DailyStudy /></ProtectedRoute>} />
-          <Route path="/assinar" element={<MeuPlano />} />
-          <Route
-            path="/preview"
-            element={
-              (import.meta.env.DEV || import.meta.env.VITE_PREVIEW_MODE === "true")
-                ? <ProtectedRoute><PreviewLessons /></ProtectedRoute>
-                : <Navigate to="/" replace />
-            }
-          />
-          <Route path="/treino" element={<ProtectedRoute><Treino /></ProtectedRoute>} />
-          <Route path="/evolucao" element={<ProtectedRoute><Evolucao /></ProtectedRoute>} />
-          <Route path="/favoritos" element={<ProtectedRoute><Favoritos /></ProtectedRoute>} />
-          <Route path="/resumo" element={<ProtectedRoute><Resumo /></ProtectedRoute>} />
-          <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
-          <Route path="/bloqueio" element={<ProtectedRoute><Bloqueio /></ProtectedRoute>} />
+          <Route path="/ia-selection" element={<ProtectedRoute><IASelection /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

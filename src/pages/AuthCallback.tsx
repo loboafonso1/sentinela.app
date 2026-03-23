@@ -13,7 +13,7 @@ const AuthCallback = () => {
         const { data: userRes } = await supabase.auth.getUser();
         if (!mounted) return;
         if (sess?.session && userRes?.user) {
-          navigate("/estudos", { replace: true });
+          navigate("/ia-selection", { replace: true });
         } else {
           console.error("Supabase callback sem sessão ou usuário válido.", { sess, userRes });
           navigate("/", { replace: true });

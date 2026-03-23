@@ -13,7 +13,7 @@ const Onboarding = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/estudos");
+        navigate("/ia-selection");
       }
     });
   }, [navigate]);
