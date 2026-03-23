@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
+import { Shield, Eye, Search, Zap, Crown } from "lucide-react";
 
 const IASelection = () => {
   const navigate = useNavigate();
@@ -25,11 +26,41 @@ const IASelection = () => {
   ];
 
   const levels = [
-    { id: "iniciante", label: "Iniciante", audio: "/audio/ia_resposta_iniciante.mp3", color: "from-[#00F2FF]/20 to-[#FF00D9]/40", borderColor: "border-[#00F2FF]/30" },
-    { id: "observador", label: "Observador", audio: "/audio/ia_resposta_observador.mp3", color: "from-[#00F2FF]/20 to-[#FF00D9]/40", borderColor: "border-[#00F2FF]/30" },
-    { id: "analista", label: "Analista", audio: "/audio/ia_resposta_analista.mp3", color: "from-[#00F2FF]/20 to-[#FF00D9]/40", borderColor: "border-[#00F2FF]/30" },
-    { id: "investigador", label: "Investigador", audio: "/audio/ia_resposta_investigador.mp3", color: "from-[#00F2FF]/20 to-[#FF00D9]/40", borderColor: "border-[#00F2FF]/30" },
-    { id: "especialista", label: "Especialista", audio: "/audio/ia_resposta_especialista.mp3", color: "from-[#00F2FF]/20 to-[#FF00D9]/40", borderColor: "border-[#00F2FF]/30" },
+    { 
+      id: "iniciante", 
+      label: "Iniciante", 
+      audio: "/audio/ia_resposta_iniciante.mp3", 
+      color: "#00D1FF",
+      icon: <Shield className="w-5 h-5" />
+    },
+    { 
+      id: "observador", 
+      label: "Observador", 
+      audio: "/audio/ia_resposta_observador.mp3", 
+      color: "#00FF94",
+      icon: <Eye className="w-5 h-5" />
+    },
+    { 
+      id: "analista", 
+      label: "Analista", 
+      audio: "/audio/ia_resposta_analista.mp3", 
+      color: "#FF9900",
+      icon: <Search className="w-5 h-5" />
+    },
+    { 
+      id: "investigador", 
+      label: "Investigador", 
+      audio: "/audio/ia_resposta_investigador.mp3", 
+      color: "#FF00D9",
+      icon: <Zap className="w-5 h-5" />
+    },
+    { 
+      id: "especialista", 
+      label: "Especialista", 
+      audio: "/audio/ia_resposta_especialista.mp3", 
+      color: "#FF005C",
+      icon: <Crown className="w-5 h-5" />
+    },
   ];
 
   useEffect(() => {
@@ -39,7 +70,7 @@ const IASelection = () => {
       }, 3000);
       return () => clearInterval(interval);
     }
-  }, [hasStarted]);
+  }, [hasStarted, loadingPhrases.length]);
 
   const handleStart = async () => {
     setIsConnecting(true);
@@ -283,7 +314,7 @@ const IASelection = () => {
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="grid grid-cols-1 gap-3"
+                  className="grid grid-cols-1 gap-4"
                 >
                   {levels.map((level, index) => (
                     <motion.button
@@ -292,9 +323,21 @@ const IASelection = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.15, duration: 0.6, ease: "easeOut" }}
                       onClick={() => handleLevelSelect(level)}
-                      className={`w-full py-4 bg-gradient-to-r ${level.color} border ${level.borderColor} rounded-xl text-white font-medium hover:brightness-125 transition-all active:scale-[0.98] shadow-lg backdrop-blur-md`}
+                      style={{ 
+                        boxShadow: `0 0 20px ${level.color}22, inset 0 0 12px ${level.color}11`,
+                        borderColor: `${level.color}44`
+                      }}
+                      className="w-full py-4 px-8 bg-black/40 border-2 rounded-full text-white flex items-center gap-5 group hover:bg-black/60 hover:border-white/30 transition-all active:scale-[0.98] backdrop-blur-xl"
                     >
-                      <span className="tracking-[0.2em] uppercase text-xs font-bold">{level.label}</span>
+                      <div style={{ color: level.color }} className="drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">
+                        {level.icon}
+                      </div>
+                      <span className="tracking-[0.3em] uppercase text-[10px] font-bold text-white/80 group-hover:text-white transition-colors">
+                        {level.label}
+                      </span>
+                      <div className="ml-auto opacity-0 group-hover:opacity-40 transition-opacity">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                      </div>
                     </motion.button>
                   ))}
                 </motion.div>
