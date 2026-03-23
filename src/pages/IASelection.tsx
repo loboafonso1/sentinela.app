@@ -16,27 +16,26 @@ const IASelection = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const levels = [
-    { id: "iniciante", label: "Iniciante", audio: "/audio/ia_resposta_iniciante.mp3" },
-    { id: "observador", label: "Observador", audio: "/audio/ia_resposta_observador.mp3" },
-    { id: "analista", label: "Analista", audio: "/audio/ia_resposta_analista.mp3" },
-    { id: "investigador", label: "Investigador", audio: "/audio/ia_resposta_investigador.mp3" },
-    { id: "especialista", label: "Especialista", audio: "/audio/ia_resposta_especialista.mp3" },
+    { id: "iniciante", label: "Iniciante", audio: "/audio/ia_resposta_iniciante.mp3", color: "from-blue-600/20 to-blue-900/40", borderColor: "border-blue-500/30" },
+    { id: "observador", label: "Observador", audio: "/audio/ia_resposta_observador.mp3", color: "from-emerald-600/20 to-emerald-900/40", borderColor: "border-emerald-500/30" },
+    { id: "analista", label: "Analista", audio: "/audio/ia_resposta_analista.mp3", color: "from-amber-600/20 to-amber-900/40", borderColor: "border-amber-500/30" },
+    { id: "investigador", label: "Investigador", audio: "/audio/ia_resposta_investigador.mp3", color: "from-purple-600/20 to-purple-900/40", borderColor: "border-purple-500/30" },
+    { id: "especialista", label: "Especialista", audio: "/audio/ia_resposta_especialista.mp3", color: "from-rose-600/20 to-rose-900/40", borderColor: "border-rose-500/30" },
   ];
 
   const handleStart = async () => {
     setHasStarted(true);
     
-    // Iniciar vídeo COM SOM na primeira vez
     if (videoRef.current) {
       try {
-        videoRef.current.muted = false; // Desmuta para a introdução
+        videoRef.current.muted = false;
+        videoRef.current.currentTime = 0;
         await videoRef.current.play();
         setIsPlaying(true);
 
-        // Quando a primeira reprodução do vídeo terminar:
         const handleFirstPlayEnd = () => {
           if (videoRef.current) {
-            videoRef.current.muted = true; // Muta o vídeo para o loop de espera
+            videoRef.current.muted = true;
           }
           setIsPlaying(false);
           setShowButtons(true);
@@ -45,30 +44,11 @@ const IASelection = () => {
 
         videoRef.current.addEventListener('ended', handleFirstPlayEnd);
       } catch (e) {
-        console.warn("Erro ao iniciar vídeo:", e);
         setShowButtons(true);
       }
     }
 
-    // O áudio ia_intro.mp3 toca em paralelo se existir
-    const introAudio = new Audio("/audio/ia_intro.mp3");
-    audioRef.current = introAudio;
-    
-    try {
-      await introAudio.play();
-      setIsPlaying(true);
-      
-      introAudio.onended = () => {
-        // Se o áudio acabar antes do vídeo, também podemos liberar os botões
-        if (!showButtons) {
-          setIsPlaying(false);
-          setShowButtons(true);
-          if (videoRef.current) videoRef.current.muted = true;
-        }
-      };
-    } catch (e) {
-      console.warn("Áudio ia_intro.mp3 não encontrado.");
-    }
+    // ia_intro.mp3 removido para focar no áudio do vídeo conforme solicitado
   };
 
   const handleLevelSelect = async (level: typeof levels[0]) => {
@@ -179,15 +159,18 @@ const IASelection = () => {
                   exit={{ opacity: 0, y: 20 }}
                   className="grid grid-cols-1 gap-3"
                 >
-                  {levels.map((level) => (
-                    <button
-                      key={level.id}
-                      onClick={() => handleLevelSelect(level)}
-                      className="w-full py-4 bg-white/5 border border-white/10 rounded-xl text-white font-medium hover:bg-white/10 transition-colors"
-                    >
-                      {level.label}
-                    </button>
-                  ))}
+              {levels.map((level, index) => (
+                <motion.button
+                  key={level.id}
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.15, duration: 0.5 }}
+                  onClick={() => handleLevelSelect(level)}
+                  className={`w-full py-4 bg-gradient-to-r ${level.color} border ${level.borderColor} rounded-xl text-white font-medium hover:brightness-125 transition-all active:scale-[0.98] shadow-lg backdrop-blur-sm`}
+                >
+                  {level.label}
+                </motion.button>
+              ))}
                 </motion.div>
               )}
             </AnimatePresence>
