@@ -32,16 +32,25 @@ const IASelection = () => {
         videoRef.current.muted = false; // Desmuta para a introdução
         await videoRef.current.play();
         setIsPlaying(true);
+
+        // Quando a primeira reprodução do vídeo terminar:
+        const handleFirstPlayEnd = () => {
+          if (videoRef.current) {
+            videoRef.current.muted = true; // Muta o vídeo para o loop de espera
+          }
+          setIsPlaying(false);
+          setShowButtons(true);
+          videoRef.current?.removeEventListener('ended', handleFirstPlayEnd);
+        };
+
+        videoRef.current.addEventListener('ended', handleFirstPlayEnd);
       } catch (e) {
         console.warn("Erro ao iniciar vídeo:", e);
+        setShowButtons(true);
       }
     }
 
-    // O vídeo agora serve como introdução sonora. 
-    // Quando ele terminar a primeira execução (ou após o tempo do ia_intro), 
-    // ele deve ficar mudo e entrar em loop, e os botões devem aparecer.
-    
-    // Se você ainda quiser usar o arquivo ia_intro.mp3 separado, ele tocará aqui:
+    // O áudio ia_intro.mp3 toca em paralelo se existir
     const introAudio = new Audio("/audio/ia_intro.mp3");
     audioRef.current = introAudio;
     
@@ -50,17 +59,15 @@ const IASelection = () => {
       setIsPlaying(true);
       
       introAudio.onended = () => {
-        setIsPlaying(false);
-        setShowButtons(true);
-        if (videoRef.current) videoRef.current.muted = true; // Volta a ficar mudo após a intro
+        // Se o áudio acabar antes do vídeo, também podemos liberar os botões
+        if (!showButtons) {
+          setIsPlaying(false);
+          setShowButtons(true);
+          if (videoRef.current) videoRef.current.muted = true;
+        }
       };
     } catch (e) {
-      // Se não houver áudio externo, usamos um timer baseado no vídeo ou fixo
-      setTimeout(() => {
-        setShowButtons(true);
-        setIsPlaying(false);
-        if (videoRef.current) videoRef.current.muted = true; // Fica mudo para o loop de espera
-      }, 5000); // Exemplo: 5 segundos de fala inicial
+      console.warn("Áudio ia_intro.mp3 não encontrado.");
     }
   };
 
