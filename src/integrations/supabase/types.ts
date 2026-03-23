@@ -54,6 +54,7 @@ export type Database = {
           onboarding_completed: boolean
           reminder_time: string | null
           updated_at: string
+          user_level_name: string | null
         }
         Insert: {
           created_at?: string
@@ -64,6 +65,7 @@ export type Database = {
           onboarding_completed?: boolean
           reminder_time?: string | null
           updated_at?: string
+          user_level_name?: string | null
         }
         Update: {
           created_at?: string
@@ -74,6 +76,7 @@ export type Database = {
           onboarding_completed?: boolean
           reminder_time?: string | null
           updated_at?: string
+          user_level_name?: string | null
         }
         Relationships: []
       }
