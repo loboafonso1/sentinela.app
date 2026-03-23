@@ -30,27 +30,27 @@ const IASelection = () => {
       try {
         videoRef.current.muted = false;
         videoRef.current.currentTime = 0;
-        await videoRef.current.play();
-        setIsPlaying(true);
-
-        const handleFirstPlayEnd = () => {
+        videoRef.current.loop = false; // Garante que não está em loop para disparar o onEnded
+        
+        // Listener direto no atributo onEnded do elemento para máxima compatibilidade
+        videoRef.current.onended = () => {
+          console.log("Vídeo finalizado - disparando transição");
           if (videoRef.current) {
-            videoRef.current.muted = true; // Muta o vídeo para o loop de espera
-            videoRef.current.loop = true;  // Ativa o loop agora
-            videoRef.current.play().catch(e => console.warn("Erro ao reiniciar em loop:", e));
+            videoRef.current.muted = true;
+            videoRef.current.loop = true;
+            videoRef.current.play().catch(e => console.warn("Erro ao reiniciar loop:", e));
           }
           setIsPlaying(false);
           setShowButtons(true);
-          videoRef.current?.removeEventListener('ended', handleFirstPlayEnd);
         };
 
-        videoRef.current.addEventListener('ended', handleFirstPlayEnd);
+        await videoRef.current.play();
+        setIsPlaying(true);
       } catch (e) {
+        console.warn("Erro ao iniciar vídeo:", e);
         setShowButtons(true);
       }
     }
-
-    // ia_intro.mp3 removido para focar no áudio do vídeo conforme solicitado
   };
 
   const handleLevelSelect = async (level: typeof levels[0]) => {
@@ -137,9 +137,16 @@ const IASelection = () => {
                 className={`min-w-full min-h-full object-cover pointer-events-none transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
                 onCanPlay={() => {
                   setVideoLoaded(true);
-                  if (videoRef.current && hasStarted) {
-                    videoRef.current.play().catch(e => console.warn("Erro ao forçar autoplay:", e));
+                }}
+                onEnded={() => {
+                  console.log("Vídeo finalizado (inline) - disparando transição");
+                  if (videoRef.current) {
+                    videoRef.current.muted = true;
+                    videoRef.current.loop = true;
+                    videoRef.current.play().catch(e => console.warn("Erro ao reiniciar loop:", e));
                   }
+                  setIsPlaying(false);
+                  setShowButtons(true);
                 }}
                 onError={(e) => {
                   console.error("Erro no vídeo (tentando /video/ia_avatar.mp4):", e);
