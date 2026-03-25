@@ -49,10 +49,13 @@ const ProximaEtapa = () => {
         </motion.div>
 
         <button
-          onClick={() => navigate("/ia-selection")}
-          className="mt-20 text-[10px] uppercase tracking-[0.4em] text-white/40 hover:text-white transition-colors border-b border-white/10 pb-2"
+          onClick={() => navigate("/treinamento")}
+          className="mt-20 group relative py-4 px-10 bg-white/5 border border-white/10 rounded-full transition-all hover:bg-white/10"
         >
-          Voltar para Diagnóstico
+          <span className="text-[10px] uppercase tracking-[0.4em] text-white/60 group-hover:text-white transition-colors">
+            Iniciar Treinamento
+          </span>
+          <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#00F2FF] to-transparent opacity-0 group-hover:opacity-50 transition-opacity" />
         </button>
       </motion.div>
     </div>

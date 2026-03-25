@@ -1,160 +1,95 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useMockData } from "@/hooks/useMockData";
 import { motion } from "framer-motion";
-import { TrendingUp, Flame, Target, Award, Shield, Trophy, Lock } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { Brain, Eye, Target, Calendar, Quote } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import { aggregates } from "@/hooks/useXpLog";
 
-const Evolucao = () => {
-  const navigate = useNavigate();
-  const { userData, achievements } = useMockData();
-  const [tab, setTab] = useState<"stats" | "conquistas">("stats");
-  const [period, setPeriod] = useState<"Dia" | "Semana" | "Mês" | "Ano">("Semana");
-  const aggr = aggregates();
-  const series = period === "Dia" ? aggr.daySeries : period === "Semana" ? aggr.weekSeries : period === "Mês" ? aggr.monthSeries : aggr.yearSeries;
-  const total =
-    period === "Dia" ? aggr.dayTotal : period === "Semana" ? aggr.weekTotal : period === "Mês" ? aggr.monthTotal : aggr.yearTotal;
-
-  const xpPercent = Math.round((userData.xp / userData.xpNextLevel) * 100);
-  const arcAngle = (xpPercent / 100) * 180;
+const Progresso = () => {
+  const stats = [
+    { label: "Atenção", value: 85, color: "#7A00FF" },
+    { label: "Raciocínio", value: 72, color: "#00F2FF" },
+    { label: "Percepção", value: 94, color: "#FF00D9" },
+    { label: "Consistência", value: 60, color: "#FF9900" },
+  ];
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <header className="px-responsive pt-6 pb-2">
-        <div className="mx-auto max-w-lg">
-          <h1 className="text-xl font-serif font-bold text-foreground">Evolução do Sentinela</h1>
-        </div>
+    <div className="min-h-screen bg-[#0A0014] text-white pb-32">
+      {/* Background Effects */}
+      <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,_#4C00B0_0%,_transparent_50%)] opacity-20 z-0" />
+
+      <header className="relative z-10 px-8 pt-12 pb-6">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
+          <h2 className="text-[10px] uppercase tracking-[0.5em] text-[#FF00D9] mb-1 font-bold">Bio-Métricas</h2>
+          <h1 className="text-3xl font-serif font-bold tracking-[0.1em]">Análise de Evolução</h1>
+        </motion.div>
       </header>
 
-      <main className="mx-auto max-w-lg px-responsive section-gap">
-        {/* Tabs */}
-        <div className="flex gap-2">
-          {(["stats", "conquistas"] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-2.5 rounded-2xl text-sm font-medium transition-all ${
-                tab === t ? "bg-gradient-sentinel text-primary-foreground" : "bg-card border border-border text-muted-foreground"
-              }`}
+      <main className="relative z-10 px-6 space-y-8">
+        {/* IA Insight */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] flex items-start gap-4"
+        >
+          <div className="p-2 bg-[#00F2FF]/10 rounded-lg">
+            <Quote className="w-4 h-4 text-[#00F2FF]" />
+          </div>
+          <p className="text-xs text-white/60 leading-relaxed italic">
+            "Sua percepção visual atingiu um novo patamar. O sistema detectou uma melhoria de 12% na velocidade de processamento de anomalias."
+          </p>
+        </motion.div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 gap-6">
+          {stats.map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + (i * 0.1) }}
+              className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl"
             >
-              {t === "stats" ? "Estatísticas" : "🏆 Conquistas"}
-            </button>
+              <div className="flex justify-between items-end mb-4">
+                <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/40">{stat.label}</span>
+                <span className="text-xl font-bold font-mono text-white">{stat.value}%</span>
+              </div>
+              <div className="relative h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${stat.value}%` }}
+                  transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 + (i * 0.1) }}
+                  className="absolute inset-y-0 left-0 rounded-full"
+                  style={{ 
+                    backgroundColor: stat.color,
+                    boxShadow: `0 0 15px ${stat.color}66`
+                  }}
+                />
+              </div>
+            </motion.div>
           ))}
         </div>
 
-        {tab === "stats" ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
-            {/* Chart */}
-            <div className="rounded-3xl border border-border bg-card p-card">
-              <h3 className="text-sm font-semibold text-foreground mb-4">Progresso de XP</h3>
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={series}>
-                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(225 15% 55%)" }} axisLine={false} tickLine={false} />
-                    <YAxis hide />
-                    <Tooltip
-                      contentStyle={{ background: "hsl(230 22% 12%)", border: "1px solid hsl(230 20% 18%)", borderRadius: "12px", fontSize: "12px" }}
-                      labelStyle={{ color: "hsl(220 20% 92%)" }}
-                    />
-                    <Line type="monotone" dataKey="xp" stroke="hsl(252 70% 60%)" strokeWidth={3} dot={{ fill: "hsl(252 70% 60%)", r: 4 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-              <div className="rounded-2xl border border-border bg-card p-3 sm:p-4">
-                <p className="text-2xl font-bold text-foreground">{userData.consecutiveDays}</p>
-                <p className="text-xs text-muted-foreground mt-1">Dias Consecutivos</p>
-                <Flame className="h-8 w-8 text-streak/30 mt-2" />
-              </div>
-              <div className="rounded-2xl border border-border bg-card p-3 sm:p-4">
-                <p className="text-2xl font-bold text-foreground">{userData.completionRate}%</p>
-                <p className="text-xs text-muted-foreground mt-1">Taxa de Conclusão</p>
-                <Target className="h-8 w-8 text-primary/30 mt-2" />
-              </div>
-              <div className="rounded-2xl border border-border bg-card p-3 sm:p-4">
-                <p className="text-2xl font-bold text-foreground">{userData.totalMissions}</p>
-                <p className="text-xs text-muted-foreground mt-1">Total de Missões</p>
-                <TrendingUp className="h-8 w-8 text-success/30 mt-2" />
-              </div>
-              <div className="rounded-2xl border border-border bg-card p-3 sm:p-4">
-                <p className="text-2xl font-bold text-foreground">{userData.level}</p>
-                <p className="text-xs text-muted-foreground mt-1">Nível Atual</p>
-                <Shield className="h-8 w-8 text-sentinel-light/30 mt-2" />
-              </div>
-            </div>
-
-            {/* Period Selector */}
-            <div className="rounded-3xl border border-border bg-card p-card">
-              <h3 className="text-sm font-semibold text-foreground mb-3">Desempenho por Período</h3>
-              <div className="flex gap-2 mb-4">
-                {(["Dia", "Semana", "Mês", "Ano"] as const).map(p => (
-                  <button
-                    key={p}
-                    onClick={() => setPeriod(p)}
-                    className={`flex-1 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                      period === p ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-              <p className="text-center text-2xl font-bold text-foreground">{total} XP</p>
-              <p className="text-center text-xs text-muted-foreground">acumulado no período</p>
-            </div>
-
-            {/* Semicircle Progress */}
-            <div className="rounded-3xl border border-border bg-card p-card text-center">
-              <h3 className="text-sm font-semibold text-foreground mb-4">Próximo Nível</h3>
-              <div className="relative mx-auto w-48 h-28 overflow-hidden">
-                <svg viewBox="0 0 200 110" className="w-full h-full">
-                  <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="hsl(var(--secondary))" strokeWidth="12" strokeLinecap="round" />
-                  <path
-                    d="M 20 100 A 80 80 0 0 1 180 100"
-                    fill="none" stroke="hsl(var(--primary))" strokeWidth="12" strokeLinecap="round"
-                    strokeDasharray={`${(arcAngle / 180) * 251.2} 251.2`}
-                  />
-                </svg>
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center">
-                  <p className="text-xl font-bold text-foreground">{xpPercent}%</p>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">{userData.xp} / {userData.xpNextLevel} XP</p>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-            {achievements.map((a) => (
-              <div
-                key={a.id}
-                className={`rounded-2xl border p-3 sm:p-4 flex items-center gap-4 ${
-                  a.unlocked ? "border-primary/30 bg-card" : "border-border bg-card/50 opacity-60"
-                }`}
-              >
-                <div className={`h-12 w-12 rounded-2xl flex items-center justify-center text-2xl ${
-                  a.unlocked ? "bg-primary/15" : "bg-secondary"
-                }`}>
-                  {a.unlocked ? a.icon : <Lock className="h-5 w-5 text-muted-foreground" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{a.title}</p>
-                  <p className="text-xs text-muted-foreground">{a.description}</p>
-                  {a.unlockedAt && <p className="text-[10px] text-primary mt-0.5">Desbloqueada</p>}
-                </div>
-                {a.unlocked && <Trophy className="h-4 w-4 text-primary shrink-0" />}
-              </div>
-            ))}
-          </motion.div>
-        )}
+        {/* Radar/Summary Preview */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.8 }}
+          className="aspect-square w-full max-w-[280px] mx-auto relative flex items-center justify-center"
+        >
+          <div className="absolute inset-0 border border-white/5 rounded-full animate-[spin_20s_linear_infinite]" />
+          <div className="absolute inset-4 border border-white/5 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
+          <div className="absolute inset-8 border border-white/5 rounded-full" />
+          
+          <Brain className="w-12 h-12 text-[#7A00FF] drop-shadow-[0_0_15px_rgba(122,0,255,0.5)]" />
+        </motion.div>
       </main>
+
       <BottomNav />
     </div>
   );
 };
 
-export default Evolucao;
+export default Progresso;

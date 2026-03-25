@@ -1,250 +1,101 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { useMockData } from "@/hooks/useMockData";
-import { useDailyQuiz } from "@/hooks/useDailyQuiz";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Clock, ChevronRight, Zap, Flame, Star } from "lucide-react";
+import { Lock, Play, Clock, Shield, Zap } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import MindShieldVisual from "@/components/MindShieldVisual";
-import FavoriteButton from "@/components/FavoriteButton";
 
-const TRAINING_DURATION = 15 * 60; // 15 minutes in seconds
-
-const Treino = () => {
-  const navigate = useNavigate();
-  const { userData, completeMission } = useMockData();
-  const quiz = useDailyQuiz();
-  const [started, setStarted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(TRAINING_DURATION);
-  const [completed, setCompleted] = useState(false);
-  const [showReward, setShowReward] = useState(false);
-
-  useEffect(() => {
-    const autostart = localStorage.getItem("sentinela_autostart_treino") === "true";
-    if (autostart && !userData.todayCompleted) setStarted(true);
-  }, [userData.todayCompleted]);
-
-  useEffect(() => {
-    if (!started || completed) return;
-    const interval = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [started, completed]);
-
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
-  };
-
-  const handleFinish = useCallback(() => {
-    setCompleted(true);
-    completeMission(Math.round((quiz.score / Math.max(quiz.total, 1)) * 3)); // use score as quiz_score (0-3 approx)
-    setTimeout(() => setShowReward(true), 300);
-  }, [completeMission, quiz.score, quiz.total]);
-
-  const progressPercent = ((TRAINING_DURATION - timeLeft) / TRAINING_DURATION) * 100;
-
-  if (userData.todayCompleted && !completed) {
-    return (
-      <div className="min-h-screen bg-background pb-24 flex items-center justify-center px-5">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-4 max-w-sm">
-          <div className="h-20 w-20 rounded-3xl bg-primary/15 flex items-center justify-center mx-auto">
-            <Clock className="h-10 w-10 text-primary" />
-          </div>
-          <h2 className="text-xl font-serif font-bold text-foreground">Treino de Hoje Concluído</h2>
-          <p className="text-sm text-muted-foreground">O crescimento acontece na constância. Volte amanhã para continuar sua evolução.</p>
-          <Button onClick={() => navigate("/dashboard")} className="bg-gradient-sentinel text-primary-foreground rounded-2xl px-8 py-5">
-            Voltar ao Início
-          </Button>
-        </motion.div>
-        <BottomNav />
-      </div>
-    );
-  }
+const Treinamento = () => {
+  const [isLocked, setIsLocked] = useState(false);
+  const [timeLeft, setTimeLeft] = useState("14:22:05");
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <AnimatePresence>
-        {showReward && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center px-5"
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", damping: 15 }}
-              className="text-center space-y-6 max-w-sm"
-            >
-              <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ repeat: 2, duration: 0.5 }}>
-                <div className="h-24 w-24 rounded-3xl bg-gradient-sentinel flex items-center justify-center mx-auto shadow-premium">
-                  <Star className="h-12 w-12 text-primary-foreground" />
-                </div>
-              </motion.div>
-              <h2 className="text-2xl font-serif font-bold text-foreground">Missão Concluída!</h2>
-              <div className="flex items-center justify-center gap-2 text-xl font-bold text-primary">
-                <Zap className="h-6 w-6" />
-                +100 XP
-              </div>
-              <div className="flex items-center justify-center gap-2 text-streak">
-                <Flame className="h-5 w-5" />
-                <span className="font-semibold">Sequência: {userData.streak + 1} dias</span>
-              </div>
-              <p className="text-sm text-muted-foreground italic">
-                "Examinai tudo. Retende o bem." — 1 Ts 5:21
-              </p>
-              <Button onClick={() => navigate("/dashboard")} className="bg-gradient-sentinel text-primary-foreground rounded-2xl px-8 py-5 w-full">
-                Continuar <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="min-h-screen bg-[#0A0014] text-white pb-32">
+      {/* Background Effects */}
+      <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,_#4C00B0_0%,_transparent_50%)] opacity-20 z-0" />
 
-      {/* Header */}
-      <header className="px-responsive pt-6 pb-4">
-        <div className="mx-auto max-w-lg">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              <span className="text-xs font-semibold text-primary tracking-wider uppercase">Treinamento Sentinela</span>
-            </div>
-            <FavoriteButton itemId="treino-diario" />
-          </div>
-          <h1 className="text-xl font-serif font-bold text-foreground">15 Minutos de Discernimento</h1>
-        </div>
+      <header className="relative z-10 px-8 pt-12 pb-6">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
+          <h2 className="text-[10px] uppercase tracking-[0.5em] text-[#00F2FF] mb-1 font-bold">Módulo Ativo</h2>
+          <h1 className="text-3xl font-serif font-bold tracking-[0.1em]">Centro de Treinamento</h1>
+        </motion.div>
       </header>
 
-      <main className="mx-auto max-w-lg px-responsive section-gap">
-        {!started ? (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="section-gap">
-            <div className="rounded-3xl border border-border bg-card p-card-lg text-center space-y-4">
-              <div className="h-20 w-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto">
-                <Clock className="h-10 w-10 text-primary" />
-              </div>
-              <h2 className="font-serif font-bold text-foreground text-xl sm:text-2xl">15:00</h2>
-              <p className="text-sm text-muted-foreground">Dedique 15 minutos para fortalecer seu discernimento bíblico.</p>
+      <main className="relative z-10 px-6 space-y-8">
+        {/* Desafio Principal */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="relative group rounded-[2.5rem] overflow-hidden bg-gradient-to-b from-white/10 to-transparent border border-white/5 backdrop-blur-xl p-8"
+        >
+          <div className="flex justify-between items-start mb-6">
+            <div className="p-3 bg-[#7A00FF]/20 rounded-2xl border border-[#7A00FF]/30 shadow-[0_0_15px_rgba(122,0,255,0.3)]">
+              <Shield className="w-6 h-6 text-white" />
             </div>
-            <Button onClick={() => setStarted(true)} className="w-full bg-gradient-sentinel text-primary-foreground font-semibold py-btn rounded-2xl shadow-sentinel text-base">
-              Iniciar Treinamento <ChevronRight className="h-5 w-5 ml-1" />
-            </Button>
-            <div className="rounded-3xl border border-border bg-card p-card">
-              <h3 className="text-sm font-semibold text-foreground mb-2">Blindagem da Mente</h3>
-              <p className="text-xs text-muted-foreground mb-4">Proteção, clareza e resistência à desinformação.</p>
-              <MindShieldVisual className="mx-auto" />
+            <div className="flex items-center gap-2 px-4 py-1.5 bg-white/5 rounded-full border border-white/10">
+              <Zap className="w-3 h-3 text-[#00F2FF]" />
+              <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-white/60">+100 XP</span>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="section-gap">
-            {/* Timer */}
-            <div className="rounded-3xl border border-border bg-card p-card-lg text-center space-y-4">
-              <div className="relative mx-auto h-32 w-32">
-                <svg className="h-32 w-32 -rotate-90" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r="52" fill="none" stroke="hsl(var(--secondary))" strokeWidth="8" />
-                  <circle
-                    cx="60" cy="60" r="52" fill="none"
-                    stroke="hsl(var(--primary))" strokeWidth="8"
-                    strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 52}`}
-                    strokeDashoffset={`${2 * Math.PI * 52 * (1 - progressPercent / 100)}`}
-                    className="transition-all duration-1000"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-foreground font-mono">{formatTime(timeLeft)}</span>
+          </div>
+
+          <h3 className="text-xl font-bold tracking-[0.05em] mb-3">Análise de Padrões I</h3>
+          <p className="text-sm text-white/50 leading-relaxed mb-8">
+            Identifique anomalias visuais e distorções em cenários de alta complexidade. 
+            Foco em percepção e velocidade de resposta.
+          </p>
+
+          <button 
+            className="w-full py-5 bg-white text-black rounded-3xl font-bold tracking-[0.2em] uppercase text-xs flex items-center justify-center gap-3 hover:bg-[#00F2FF] transition-all active:scale-[0.98] shadow-[0_10px_30px_rgba(255,255,255,0.1)]"
+          >
+            <Play className="w-4 h-4 fill-current" />
+            Iniciar Desafio
+          </button>
+
+          {/* Efeito de brilho na borda superior */}
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        </motion.div>
+
+        {/* Próximos Desafios (Bloqueados) */}
+        <div className="space-y-4">
+          <h4 className="text-[10px] uppercase tracking-[0.5em] text-white/30 font-bold px-2">Próximos Desafios</h4>
+          
+          {[
+            { title: "Filtragem de Ruído", time: "24h 00m" },
+            { title: "Sincronia Cognitiva", time: "48h 00m" }
+          ].map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 + (i * 0.1) }}
+              className="flex items-center justify-between p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] opacity-60 grayscale"
+            >
+              <div className="flex items-center gap-5">
+                <div className="p-3 bg-white/5 rounded-xl">
+                  <Lock className="w-4 h-4 text-white/40" />
+                </div>
+                <div>
+                  <h5 className="text-sm font-bold tracking-wide text-white/60">{item.title}</h5>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Clock className="w-3 h-3 text-white/20" />
+                    <span className="text-[9px] uppercase tracking-[0.1em] text-white/30">Libera em {item.time}</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
-                <span>{quiz.index}/{quiz.total} questões</span>
-                <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground/50" />
-                <span>Pontuação: {quiz.score}</span>
+              <div className="w-10 h-10 border border-white/10 rounded-full flex items-center justify-center">
+                <div className="w-1 h-1 bg-white/20 rounded-full" />
               </div>
-            </div>
-
-            {/* Quiz area */}
-            <div className="rounded-3xl border border-border bg-card p-card space-y-4">
-              {!quiz.current && !quiz.completed && (
-                <p className="text-sm text-muted-foreground">Carregando questões...</p>
-              )}
-              {quiz.current && (
-                <>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">{quiz.current.category}</p>
-                    <h3 className="text-base font-semibold text-foreground">{quiz.current.question}</h3>
-                  </div>
-                  <div className="space-y-2">
-                    {quiz.current.options.map((opt, idx) => {
-                      const already = quiz.answers[quiz.index] !== -1;
-                      const isSelected = quiz.answers[quiz.index] === idx;
-                      const isCorrect = idx === quiz.current!.correctIndex;
-                      const style =
-                        already
-                          ? isCorrect
-                            ? "border-success/50 bg-success/10"
-                            : isSelected
-                              ? "border-destructive/50 bg-destructive/10"
-                              : "border-border"
-                          : "border-border hover:border-primary/50";
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() => quiz.answer(idx)}
-                          disabled={already}
-                          className={`w-full text-left rounded-xl border px-4 py-3 text-sm transition-colors ${style}`}
-                          aria-pressed={isSelected}
-                        >
-                          {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-              {quiz.completed && (
-                <div className="text-center space-y-2">
-                  <h3 className="text-lg font-serif font-bold text-foreground">Treino concluído</h3>
-                  <p className="text-sm text-muted-foreground">Você acertou {quiz.score} de {quiz.total} questões.</p>
-                </div>
-              )}
-            </div>
-
-            {(quiz.completed || timeLeft === 0) ? (
-              <Button
-                onClick={handleFinish}
-                className="w-full bg-gradient-sentinel text-primary-foreground font-semibold py-btn rounded-2xl shadow-sentinel text-base"
-              >
-                Finalizar Missão <ChevronRight className="h-5 w-5 ml-1" />
-              </Button>
-            ) : (
-              <Button
-                onClick={() => quiz.skip()}
-                className="w-full bg-gradient-sentinel text-primary-foreground font-semibold py-btn rounded-2xl shadow-sentinel text-base"
-              >
-                Pular <ChevronRight className="h-5 w-5 ml-1" />
-              </Button>
-            )}
-            <div className="rounded-3xl border border-border bg-card p-card">
-              <h3 className="text-sm font-semibold text-foreground mb-2">Blindagem da Mente</h3>
-              <p className="text-xs text-muted-foreground mb-4">Proteção, clareza e resistência à desinformação.</p>
-              <MindShieldVisual className="mx-auto" />
-            </div>
-          </motion.div>
-        )}
+            </motion.div>
+          ))}
+        </div>
       </main>
+
       <BottomNav />
     </div>
   );
 };
 
-export default Treino;
+export default Treinamento;
