@@ -52,6 +52,32 @@ const Investigacao = () => {
     });
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    const touch = e.touches[0];
+    lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const lastTouchRef = useRef({ x: 0, y: 0 });
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - lastTouchRef.current.x;
+    const deltaY = touch.clientY - lastTouchRef.current.y;
+    
+    setPosition(prev => ({
+      x: prev.x + deltaX,
+      y: prev.y + deltaY
+    }));
+    
+    lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
   return (
     <div className="fixed inset-0 bg-black text-white flex flex-col overflow-hidden font-sans">
       {/* Header com Timer */}
@@ -76,11 +102,14 @@ const Investigacao = () => {
       {/* Área de Investigação (Imagem 360/Interativa) */}
       <div 
         ref={containerRef}
-        className="flex-1 relative cursor-grab active:cursor-grabbing overflow-hidden"
+        className="flex-1 relative cursor-grab active:cursor-grabbing overflow-hidden touch-none"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <motion.div
           animate={{ 
