@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import Favoritos from "./pages/Favoritos";
 import Onboarding from "./pages/Onboarding";
 import IASelection from "./pages/IASelection";
+import ProximaEtapa from "./pages/ProximaEtapa";
 import AuthCallback from "./pages/AuthCallback";
 import { useAuth } from "./hooks/useAuth";
 
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/ia-selection" element={<ProtectedRoute><IASelection /></ProtectedRoute>} />
+          <Route path="/proxima-etapa" element={<ProtectedRoute><ProximaEtapa /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
