@@ -15,6 +15,7 @@ const IASelection = () => {
   const [hasStarted, setHasStarted] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
+  const [isFadingOut, setIsFadingOut] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -109,7 +110,8 @@ const IASelection = () => {
     if (selectedLevel) return;
     
     setSelectedLevel(level.id);
-    setShowButtons(false);
+    // Não escondemos os botões imediatamente, apenas desabilitamos a interação via state
+    // mas vamos manter o usuário na mesma tela conforme solicitado.
     
     if (user) {
       await supabase
@@ -118,20 +120,28 @@ const IASelection = () => {
         .eq("id", user.id);
     }
 
+    // Delay profissional de 500ms antes de iniciar o áudio
     setTimeout(async () => {
       const responseAudio = new Audio(level.audio);
       audioRef.current = responseAudio;
       
       try {
         await responseAudio.play();
-        setIsPlaying(true);
+        setIsPlaying(true); // Isso ativa a animação de pulso no avatar
         
+        // O Builder PRECISA detectar o fim do áudio para transição de fase
         responseAudio.onended = () => {
           setIsPlaying(false);
-          navigate("/proxima-etapa"); 
+          setIsFadingOut(true); // Inicia o escurecimento da tela
+          
+          setTimeout(() => {
+            navigate("/proxima-etapa"); 
+          }, 800); // Tempo para o fade out completar
         };
       } catch (e) {
-        navigate("/proxima-etapa");
+        console.error("Erro ao reproduzir áudio:", e);
+        setIsFadingOut(true);
+        setTimeout(() => navigate("/proxima-etapa"), 800);
       }
     }, 500);
   };
@@ -307,6 +317,19 @@ const IASelection = () => {
           {/* Gradiente de Interação */}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40 z-15 pointer-events-none" />
 
+          {/* Efeito de Fade Out Profissional */}
+          <AnimatePresence>
+            {isFadingOut && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8 }}
+                className="absolute inset-0 bg-black z-[100] pointer-events-none"
+              />
+            )}
+          </AnimatePresence>
+
           {/* Botões de Seleção */}
           <div className="absolute bottom-12 w-full max-w-lg px-6 z-20 left-1/2 -translate-x-1/2">
             <AnimatePresence>
@@ -323,18 +346,24 @@ const IASelection = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.15, duration: 0.6, ease: "easeOut" }}
                       onClick={() => handleLevelSelect(level)}
-                      whileHover={{ 
+                      disabled={!!selectedLevel}
+                      style={{
+                        borderColor: selectedLevel === level.id ? level.color : "rgba(255,255,255,0.1)",
+                        backgroundColor: selectedLevel === level.id ? `${level.color}22` : "rgba(0,0,0,0.4)",
+                        boxShadow: selectedLevel === level.id ? `0 0 30px ${level.color}44` : "none"
+                      }}
+                      whileHover={!selectedLevel ? { 
                         backgroundColor: `${level.color}22`,
                         borderColor: `${level.color}88`,
                         boxShadow: `0 0 30px ${level.color}44, inset 0 0 15px ${level.color}22`
-                      }}
-                      whileTap={{ 
+                      } : {}}
+                      whileTap={!selectedLevel ? { 
                         scale: 0.95,
                         backgroundColor: level.color,
                         borderColor: "#FFFFFF",
                         boxShadow: `0 0 40px ${level.color}88`
-                      }}
-                      className="w-full py-4 px-8 bg-black/40 border-2 rounded-full text-white flex items-center gap-5 group transition-all backdrop-blur-xl"
+                      } : {}}
+                      className={`w-full py-4 px-8 border-2 rounded-full text-white flex items-center gap-5 group transition-all backdrop-blur-xl ${selectedLevel && selectedLevel !== level.id ? 'opacity-30' : 'opacity-100'} ${selectedLevel ? 'cursor-default' : 'cursor-pointer'}`}
                     >
                       <motion.div 
                         style={{ color: level.color }} 
