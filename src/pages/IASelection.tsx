@@ -135,13 +135,13 @@ const IASelection = () => {
           setIsFadingOut(true); // Inicia o escurecimento da tela
           
           setTimeout(() => {
-            navigate("/proxima-etapa"); 
+            navigate("/treinamento"); 
           }, 800); // Tempo para o fade out completar
         };
       } catch (e) {
         console.error("Erro ao reproduzir áudio:", e);
         setIsFadingOut(true);
-        setTimeout(() => navigate("/proxima-etapa"), 800);
+        setTimeout(() => navigate("/treinamento"), 800);
       }
     }, 500);
   };
