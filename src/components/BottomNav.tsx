@@ -13,8 +13,8 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Não exibir BottomNav em telas de entrada/onboarding/login ou investigação
-  const hideNavPaths = ["/", "/login", "/ia-selection", "/auth/callback", "/investigacao"];
+  // Não exibir BottomNav em telas de entrada/onboarding/login, investigação ou análise
+  const hideNavPaths = ["/", "/login", "/ia-selection", "/auth/callback", "/investigacao", "/analise-padroes", "/resultado-analise"];
   if (hideNavPaths.includes(location.pathname)) return null;
 
   return (

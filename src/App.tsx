@@ -16,6 +16,8 @@ import IASelection from "./pages/IASelection";
 import ProximaEtapa from "./pages/ProximaEtapa";
 import Treinamento from "./pages/Treino";
 import Investigacao from "./pages/Investigacao";
+import AnalisePadroes from "./pages/AnalisePadroes";
+import ResultadoAnalise from "./pages/ResultadoAnalise";
 import Progresso from "./pages/Evolucao";
 import Perfil from "./pages/Perfil";
 import Configuracoes from "./pages/Configuracoes";
@@ -45,6 +47,8 @@ const App = () => (
           <Route path="/proxima-etapa" element={<ProtectedRoute><ProximaEtapa /></ProtectedRoute>} />
           <Route path="/treinamento" element={<ProtectedRoute><Treinamento /></ProtectedRoute>} />
           <Route path="/investigacao" element={<ProtectedRoute><Investigacao /></ProtectedRoute>} />
+          <Route path="/analise-padroes" element={<ProtectedRoute><AnalisePadroes /></ProtectedRoute>} />
+          <Route path="/resultado-analise" element={<ProtectedRoute><ResultadoAnalise /></ProtectedRoute>} />
           <Route path="/progresso" element={<ProtectedRoute><Progresso /></ProtectedRoute>} />
           <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
           <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />

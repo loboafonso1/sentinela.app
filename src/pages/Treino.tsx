@@ -30,8 +30,8 @@ const Treinamento = () => {
   ];
 
   const handleStartInvestigation = () => {
-    // Transição com zoom para a tela de investigação
-    navigate("/investigacao");
+    // Transição com zoom para a tela de investigação (primeira aula)
+    navigate("/analise-padroes");
   };
 
   return (
@@ -58,15 +58,20 @@ const Treinamento = () => {
           transition={{ delay: 0.2 }}
           className="relative group rounded-[2.5rem] overflow-hidden bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl"
         >
-          {/* Imagem de Preview com Overlay */}
-          <div className="relative h-64 w-full overflow-hidden">
-            <motion.img 
-              src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop" 
-              alt="Preview Desafio"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0014] via-[#0A0014]/40 to-transparent" />
-            <div className="absolute inset-0 bg-[#7A00FF]/10 opacity-40 mix-blend-overlay" />
+          {/* Mockup Oval com Vídeo da IA */}
+          <div className="relative h-72 w-full flex items-center justify-center pt-8 overflow-hidden">
+            <div className="relative w-48 h-64 rounded-[100px] overflow-hidden border-2 border-[#7A00FF]/30 shadow-[0_0_30px_rgba(122,0,255,0.3)] bg-black">
+              <video 
+                src="/video/ia_avatar.mp4" 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                className="w-full h-full object-cover scale-110 opacity-80"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
+              <div className="absolute inset-0 bg-[#7A00FF]/10 mix-blend-overlay" />
+            </div>
             
             {/* Texto acima da imagem */}
             <div className="absolute top-6 left-8">
@@ -74,13 +79,15 @@ const Treinamento = () => {
             </div>
           </div>
 
-          <div className="px-8 pb-8 -mt-12 relative z-10">
-            <h3 className="text-2xl font-bold tracking-[0.02em] mb-4 leading-tight">
-              Você consegue identificar o detalhe que todos ignoraram?
+          <div className="px-8 pb-10 pt-6 relative z-10 text-center">
+            <h3 className="text-lg font-bold tracking-[0.05em] mb-4 leading-relaxed text-white/90">
+              "Responda rapidamente. <br />
+              Não pense. <br />
+              A primeira resposta… é sempre a mais honesta."
             </h3>
             
-            <p className="text-xs text-white/40 leading-relaxed mb-8 max-w-[280px]">
-              O sistema detectou uma falha na narrativa visual. Sua missão é localizar o ponto de ruptura.
+            <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] mb-8">
+              Módulo: Análise de Padrões I
             </p>
 
             <motion.button 
