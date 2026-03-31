@@ -9,73 +9,73 @@ const questions = [
     id: 1,
     question: "Quando você ouve a palavra 'escuro', o que vem primeiro?",
     options: ["Medo", "Silêncio", "Descanso", "Algo te observando"],
-    image: "https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=2070&auto=format&fit=crop"
+    image: "/images/questions/pergunta_1.jpg"
   },
   {
     id: 2,
     question: "Você está sozinho em casa. De repente… ouve um barulho.",
     options: ["Ignora", "Vai investigar", "Fica alerta, mas não se move", "Pega algo para se defender"],
-    image: "https://images.unsplash.com/photo-1558444479-c8f02e62770e?q=80&w=2070&auto=format&fit=crop"
+    image: "/images/questions/pergunta_2.jpg"
   },
   {
     id: 3,
     question: "Alguém te observa sem falar nada. O que você sente?",
     options: ["Desconforto", "Curiosidade", "Indiferença", "Ameaça"],
-    image: "https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=2059&auto=format&fit=crop"
+    image: "/images/questions/pergunta_3.jpg"
   },
   {
     id: 4,
     question: "Você já teve a sensação de que alguém te observa… mesmo sozinho?",
     options: ["Nunca", "Às vezes", "Frequentemente", "Sempre"],
-    image: "https://images.unsplash.com/photo-1516339901601-2e1b62dc0c45?q=80&w=2042&auto=format&fit=crop"
+    image: "/images/questions/pergunta_4.jpg"
   },
   {
     id: 5,
     question: "Se seu celular começasse a agir sozinho, você pensaria:",
     options: ["Bug", "Hacker", "Coincidência estranha", "Algo maior acontecendo"],
-    image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop"
+    image: "/images/questions/pergunta_5.jpg"
   },
   {
     id: 6,
     question: "Você confia totalmente na tecnologia?",
     options: ["Sim", "Parcialmente", "Não muito", "Não confio"],
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop"
+    image: "/images/questions/pergunta_6.jpg"
   },
   {
     id: 7,
     question: "Em uma situação de perigo, você age mais por:",
     options: ["Razão", "Instinto", "Medo", "Estratégia"],
-    image: "https://images.unsplash.com/photo-1454165833767-027ffea9e778?q=80&w=2070&auto=format&fit=crop"
+    image: "/images/questions/pergunta_7.jpg"
   },
   {
     id: 8,
     question: "Se alguém te trai, sua primeira reação é:",
     options: ["Se afastar", "Confrontar", "Ignorar", "Planejar algo"],
-    image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2050&auto=format&fit=crop"
+    image: "/images/questions/pergunta_8.jpg"
   },
   {
     id: 9,
     question: "Você prefere:",
     options: ["Segurança", "Liberdade", "Controle", "Poder"],
-    image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=2062&auto=format&fit=crop"
+    image: "/images/questions/pergunta_9.jpg"
   },
   {
     id: 10,
     question: "Você se vê como alguém:",
     options: ["Observador", "Reativo", "Calculista", "Imprevisível"],
-    image: "https://images.unsplash.com/photo-1535223289827-42f1e9919769?q=80&w=2070&auto=format&fit=crop"
+    image: "/images/questions/pergunta_10.jpg"
   },
   {
     id: 11,
     question: "Se ninguém estivesse te observando, você:",
     options: ["Seria o mesmo", "Mudaria um pouco", "Mudaria muito", "Não sabe"],
-    image: "https://images.unsplash.com/photo-1483736762161-1d107f3c78e1?q=80&w=2070&auto=format&fit=crop"
+    image: "/images/questions/pergunta_11.jpg"
   },
   {
     id: 12,
     question: "Você acredita que as pessoas escondem quem realmente são?",
     options: ["Não", "Às vezes", "Quase sempre", "Sempre"],
-    image: "https://images.unsplash.com/photo-1504707748692-419802cf939d?q=80&w=2047&auto=format&fit=crop"
+    image: "/images/questions/pergunta_12.jpg"
   }
 ];
 

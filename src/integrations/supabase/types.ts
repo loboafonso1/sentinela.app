@@ -55,6 +55,13 @@ export type Database = {
           reminder_time: string | null
           updated_at: string
           user_level_name: string | null
+          xp: number
+          consistency: number
+          attention: number
+          perception: number
+          reasoning: number
+          last_analysis_data: Json | null
+          behavioral_flags: Json | null
         }
         Insert: {
           created_at?: string
@@ -66,6 +73,13 @@ export type Database = {
           reminder_time?: string | null
           updated_at?: string
           user_level_name?: string | null
+          xp?: number
+          consistency?: number
+          attention?: number
+          perception?: number
+          reasoning?: number
+          last_analysis_data?: Json | null
+          behavioral_flags?: Json | null
         }
         Update: {
           created_at?: string
@@ -77,6 +91,13 @@ export type Database = {
           reminder_time?: string | null
           updated_at?: string
           user_level_name?: string | null
+          xp?: number
+          consistency?: number
+          attention?: number
+          perception?: number
+          reasoning?: number
+          last_analysis_data?: Json | null
+          behavioral_flags?: Json | null
         }
         Relationships: []
       }
