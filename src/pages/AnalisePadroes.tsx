@@ -15,19 +15,19 @@ const questions = [
     id: 2,
     question: "Você está sozinho em casa. De repente… ouve um barulho.",
     options: ["Ignora", "Vai investigar", "Fica alerta, mas não se move", "Pega algo para se defender"],
-    image: null
+    image: "https://images.unsplash.com/photo-1558444479-c8f02e62770e?q=80&w=2070&auto=format&fit=crop"
   },
   {
     id: 3,
     question: "Alguém te observa sem falar nada. O que você sente?",
     options: ["Desconforto", "Curiosidade", "Indiferença", "Ameaça"],
-    image: null
+    image: "https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=2059&auto=format&fit=crop"
   },
   {
     id: 4,
     question: "Você já teve a sensação de que alguém te observa… mesmo sozinho?",
     options: ["Nunca", "Às vezes", "Frequentemente", "Sempre"],
-    image: null
+    image: "https://images.unsplash.com/photo-1516339901601-2e1b62dc0c45?q=80&w=2042&auto=format&fit=crop"
   },
   {
     id: 5,
@@ -39,43 +39,43 @@ const questions = [
     id: 6,
     question: "Você confia totalmente na tecnologia?",
     options: ["Sim", "Parcialmente", "Não muito", "Não confio"],
-    image: null
+    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop"
   },
   {
     id: 7,
     question: "Em uma situação de perigo, você age mais por:",
     options: ["Razão", "Instinto", "Medo", "Estratégia"],
-    image: null
+    image: "https://images.unsplash.com/photo-1454165833767-027ffea9e778?q=80&w=2070&auto=format&fit=crop"
   },
   {
     id: 8,
     question: "Se alguém te trai, sua primeira reação é:",
     options: ["Se afastar", "Confrontar", "Ignorar", "Planejar algo"],
-    image: null
+    image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2050&auto=format&fit=crop"
   },
   {
     id: 9,
     question: "Você prefere:",
     options: ["Segurança", "Liberdade", "Controle", "Poder"],
-    image: null
+    image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=2062&auto=format&fit=crop"
   },
   {
     id: 10,
     question: "Você se vê como alguém:",
     options: ["Observador", "Reativo", "Calculista", "Imprevisível"],
-    image: null
+    image: "https://images.unsplash.com/photo-1535223289827-42f1e9919769?q=80&w=2070&auto=format&fit=crop"
   },
   {
     id: 11,
     question: "Se ninguém estivesse te observando, você:",
     options: ["Seria o mesmo", "Mudaria um pouco", "Mudaria muito", "Não sabe"],
-    image: null
+    image: "https://images.unsplash.com/photo-1483736762161-1d107f3c78e1?q=80&w=2070&auto=format&fit=crop"
   },
   {
     id: 12,
     question: "Você acredita que as pessoas escondem quem realmente são?",
     options: ["Não", "Às vezes", "Quase sempre", "Sempre"],
-    image: null
+    image: "https://images.unsplash.com/photo-1504707748692-419802cf939d?q=80&w=2047&auto=format&fit=crop"
   }
 ];
 
@@ -130,39 +130,92 @@ const AnalisePadroes = () => {
   const finishAnalysis = async (allAnswers: any[]) => {
     setShowTransition(true);
     
-    // Lógica Oculta de Processamento
-    let totalXp = 0;
-    allAnswers.forEach(ans => {
-      // Bônus Velocidade
-      if (ans.tempo_resposta_ms < 1500) totalXp += 50;
-      else if (ans.tempo_resposta_ms < 3000) totalXp += 30;
-      else totalXp += 10;
+    // 1. Cálculo de Consistência
+    let consistencia = 100;
+    let autoEdicao = false;
+    let controleConsciente = false;
 
-      // Lógica de Padrão (Simulada para XP)
-      const threatTerms = ["Algo te observando", "Ameaça", "Poder", "Calculista", "Sempre"];
-      if (threatTerms.includes(ans.resposta_escolhida)) totalXp += 20;
-    });
+    // Buscar tentativa anterior no Supabase
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("last_analysis_data, attention, reasoning, perception, consistency, xp")
+      .eq("id", user?.id)
+      .single();
 
-    // Salvar no Supabase
-    if (user) {
-      // Aqui salvaríamos os dados brutos em uma tabela de logs se necessário
-      // E atualizaríamos o XP do perfil
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("xp")
-        .eq("id", user.id)
-        .single();
+    if (profile?.last_analysis_data) {
+      const lastAnswers = profile.last_analysis_data as any[];
+      let changedCount = 0;
       
-      const currentXp = profile?.xp || 0;
+      allAnswers.forEach((ans, idx) => {
+        if (lastAnswers[idx] && lastAnswers[idx].resposta_escolhida !== ans.resposta_escolhida) {
+          changedCount++;
+        }
+      });
+
+      consistencia = Math.round(100 - (changedCount / questions.length * 100));
+      
+      // Detecção de Autoedição (> 40% mudou)
+      if ((changedCount / questions.length) > 0.4) autoEdicao = true;
+      
+      // Detecção de Controle Consciente (redução de respostas emocionais)
+      // (Lógica simplificada: se mudou respostas de "Medo/Desconforto" para "Ignora/Indiferença")
+      const emotionalTerms = ["Medo", "Desconforto", "Ameaça"];
+      const neutralTerms = ["Ignora", "Indiferença", "Silêncio"];
+      
+      let emotionalToNeutral = 0;
+      allAnswers.forEach((ans, idx) => {
+        if (lastAnswers[idx] && 
+            emotionalTerms.includes(lastAnswers[idx].resposta_escolhida) && 
+            neutralTerms.includes(ans.resposta_escolhida)) {
+          emotionalToNeutral++;
+        }
+      });
+      if (emotionalToNeutral > 2) controleConsciente = true;
+    }
+
+    // 2. Ajuste das Outras Métricas
+    // ATENÇÃO: baseada no tempo médio
+    const avgTime = allAnswers.reduce((acc, curr) => acc + curr.tempo_resposta_ms, 0) / allAnswers.length;
+    let atencao = Math.round(Math.max(0, 100 - (avgTime / 5000 * 100))); // 5s como base 0
+    if (consistencia > 80) atencao += 10;
+
+    // PERCEPÇÃO: baseada em respostas de vigilância
+    const vigilanceTerms = ["Algo te observando", "Vai investigar", "Ameaça", "Sempre", "Hacker", "Algo maior acontecendo", "Calculista"];
+    const vigilanceCount = allAnswers.filter(ans => vigilanceTerms.includes(ans.resposta_escolhida)).length;
+    const percepcao = Math.round((vigilanceCount / questions.length) * 100 + 20); // Base + 20
+
+    // RACIOCÍNIO: tempo médio + padrão equilibrado
+    let raciocinio = Math.round(profile?.reasoning || 70);
+    if (avgTime > 1500 && avgTime < 3500) raciocinio += 5; // Tempo equilibrado indica reflexão
+
+    // 3. Sistema de XP
+    let totalXpGain = 0;
+    allAnswers.forEach(ans => {
+      if (ans.tempo_resposta_ms < 1500) totalXpGain += 50;
+      else if (ans.tempo_resposta_ms < 3000) totalXpGain += 30;
+      else totalXpGain += 10;
+    });
+    if (consistencia > 90) totalXpGain += 200;
+
+    // 4. Salvar tudo no Supabase
+    if (user) {
       await supabase
         .from("profiles")
-        .update({ xp: currentXp + totalXp })
+        .update({ 
+          xp: (profile?.xp || 0) + totalXpGain,
+          consistency: Math.min(100, consistencia),
+          attention: Math.min(100, atencao),
+          perception: Math.min(100, percepcao),
+          reasoning: Math.min(100, raciocinio),
+          last_analysis_data: allAnswers,
+          behavioral_flags: { autoEdicao, controleConsciente }
+        })
         .eq("id", user.id);
     }
 
-    // Navegar para resultado com o XP gerado
+    // Navegar para resultado
     setTimeout(() => {
-      navigate("/resultado-analise", { state: { xp: totalXp } });
+      navigate("/resultado-analise", { state: { xp: totalXpGain } });
     }, 3000);
   };
 
