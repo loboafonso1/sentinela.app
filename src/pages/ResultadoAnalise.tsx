@@ -7,14 +7,17 @@ const ResultadoAnalise = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [xpCount, setXpCount] = useState(0);
-  const [showXp, setShowXp] = useState(false);
   
   const targetXp = location.state?.xp || 0;
 
   useEffect(() => {
-    // Iniciar contagem crescente de XP
-    const duration = 2000; // 2 segundos
-    const stepTime = Math.abs(Math.floor(duration / targetXp));
+    if (!targetXp || targetXp <= 0) {
+      setXpCount(0);
+      return;
+    }
+
+    const duration = 2000;
+    const stepTime = Math.max(10, Math.abs(Math.floor(duration / targetXp)));
     let currentXp = 0;
 
     const timer = setInterval(() => {
@@ -89,7 +92,7 @@ const ResultadoAnalise = () => {
               fill="transparent"
               className="text-[#7A00FF]"
               strokeDasharray={578}
-              strokeDashoffset={578 - (578 * xpCount) / targetXp}
+              strokeDashoffset={targetXp > 0 ? 578 - (578 * xpCount) / targetXp : 578}
             />
           </svg>
         </div>
@@ -98,11 +101,11 @@ const ResultadoAnalise = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 2.5 }}
-          onClick={() => navigate("/treinamento")}
+          onClick={() => navigate("/progresso")}
           className="w-full max-w-[280px] py-6 bg-white text-black rounded-[2rem] font-bold tracking-[0.4em] uppercase text-[11px] flex items-center justify-center gap-4 shadow-[0_10px_40px_rgba(255,255,255,0.15)] active:scale-[0.98] transition-all mx-auto"
         >
           <Trophy className="w-4 h-4" />
-          Ver Dashboard
+          Ver Progresso
         </motion.button>
       </motion.div>
     </div>

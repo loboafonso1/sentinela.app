@@ -19,7 +19,12 @@ type Props = {
 };
 
 const DailyQuiz = ({ questions, onComplete, onStepCorrect, dayNumber = 1, recordProgress = true }: Props) => {
-  if (!questions || questions.length === 0) {
+  const safeQuestions = questions ?? [];
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [status, setStatus] = useState<"idle" | "correct" | "wrong">("idle");
+
+  if (safeQuestions.length === 0) {
     return (
       <div className="rounded-3xl border border-border bg-card p-card">
         <div className="flex items-center justify-between mb-3">
@@ -32,11 +37,8 @@ const DailyQuiz = ({ questions, onComplete, onStepCorrect, dayNumber = 1, record
       </div>
     );
   }
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [status, setStatus] = useState<"idle" | "correct" | "wrong">("idle");
 
-  const q = questions[currentIndex];
+  const q = safeQuestions[currentIndex];
 
   const onSelect = (i: number) => {
     if (status !== "idle") return;
@@ -57,7 +59,7 @@ const DailyQuiz = ({ questions, onComplete, onStepCorrect, dayNumber = 1, record
   };
 
   const next = () => {
-    if (currentIndex < questions.length - 1) {
+    if (currentIndex < safeQuestions.length - 1) {
       setCurrentIndex((v) => v + 1);
       setSelectedIndex(null);
       setStatus("idle");
@@ -70,7 +72,7 @@ const DailyQuiz = ({ questions, onComplete, onStepCorrect, dayNumber = 1, record
     <div className="rounded-3xl border border-border bg-card p-card shadow-premium">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-foreground">Quiz do dia</h3>
-        <span className="text-xs text-muted-foreground">Pergunta {currentIndex + 1} de {questions.length}</span>
+          <span className="text-xs text-muted-foreground">Pergunta {currentIndex + 1} de {safeQuestions.length}</span>
       </div>
       <p className="text-base font-semibold text-foreground mb-4">{q.question}</p>
       <div className="grid gap-2">
@@ -123,7 +125,7 @@ const DailyQuiz = ({ questions, onComplete, onStepCorrect, dayNumber = 1, record
           </div>
           <div className="flex justify-end mt-3">
             <button onClick={next} className="rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-medium py-2 px-3 hover:opacity-95">
-              {currentIndex === questions.length - 1 ? "Concluir" : "Próxima pergunta"}
+              {currentIndex === safeQuestions.length - 1 ? "Concluir" : "Próxima pergunta"}
             </button>
           </div>
         </div>

@@ -4,7 +4,9 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-let client: any;
+type SupabaseClient = ReturnType<typeof createClient<Database>>;
+
+let client: SupabaseClient;
 if (SUPABASE_URL && SUPABASE_KEY) {
   client = createClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
     auth: {
@@ -16,9 +18,9 @@ if (SUPABASE_URL && SUPABASE_KEY) {
     }
   });
 } else {
-  client = {
+  client = ({
     auth: {
-      onAuthStateChange: (cb: any) => {
+      onAuthStateChange: (cb: (...args: unknown[]) => void) => {
         cb(null, { user: null });
         return { data: { subscription: { unsubscribe() {} } } };
       },
@@ -32,6 +34,6 @@ if (SUPABASE_URL && SUPABASE_KEY) {
       limit: () => ({ data: null, error: null }),
       maybeSingle: () => ({ data: null, error: null })
     })
-  };
+  } as unknown) as SupabaseClient;
 }
 export const supabase = client as ReturnType<typeof createClient<Database>>;

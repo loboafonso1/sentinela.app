@@ -1,15 +1,26 @@
 import { motion } from "framer-motion";
-import { Brain, Eye, Target, Calendar, Quote, RotateCcw } from "lucide-react";
+import { Brain, Quote, RotateCcw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import type { Tables } from "@/integrations/supabase/types";
+
+type ProfileRow = Tables<"profiles">;
+
+type MetricsPayload = {
+  attention: number;
+  reasoning: number;
+  perception: number;
+  consistency: number;
+  flags?: { autoEdicao?: boolean; controleConsciente?: boolean };
+};
 
 const Progresso = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,18 +38,43 @@ const Progresso = () => {
     fetchProfile();
   }, [user]);
 
+  const metricsFromJson = (() => {
+    const onboarding = profile?.onboarding_answers;
+    if (!onboarding || typeof onboarding !== "object") return undefined;
+    const analysis = (onboarding as Record<string, unknown>).analysis;
+    if (!analysis || typeof analysis !== "object") return undefined;
+    const metrics = (analysis as Record<string, unknown>).metrics;
+    if (!metrics || typeof metrics !== "object") return undefined;
+    const m = metrics as Record<string, unknown>;
+    const attention = typeof m.attention === "number" ? m.attention : undefined;
+    const reasoning = typeof m.reasoning === "number" ? m.reasoning : undefined;
+    const perception = typeof m.perception === "number" ? m.perception : undefined;
+    const consistency = typeof m.consistency === "number" ? m.consistency : undefined;
+    if (attention === undefined || reasoning === undefined || perception === undefined || consistency === undefined) return undefined;
+    const flagsRaw = m.flags;
+    const flags =
+      flagsRaw && typeof flagsRaw === "object"
+        ? {
+            autoEdicao: (flagsRaw as Record<string, unknown>).autoEdicao === true,
+            controleConsciente: (flagsRaw as Record<string, unknown>).controleConsciente === true
+          }
+        : undefined;
+    return { attention, reasoning, perception, consistency, flags } satisfies MetricsPayload;
+  })();
+
   const stats = [
-    { label: "Atenção", value: profile?.attention || 0, color: "#7A00FF" },
-    { label: "Raciocínio", value: profile?.reasoning || 0, color: "#00F2FF" },
-    { label: "Percepção", value: profile?.perception || 0, color: "#FF00D9" },
-    { label: "Consistência", value: profile?.consistency || 0, color: "#FF9900" },
+    { label: "Atenção", value: profile?.attention ?? metricsFromJson?.attention ?? 0, color: "#7A00FF" },
+    { label: "Raciocínio", value: profile?.reasoning ?? metricsFromJson?.reasoning ?? 0, color: "#00F2FF" },
+    { label: "Percepção", value: profile?.perception ?? metricsFromJson?.perception ?? 0, color: "#FF00D9" },
+    { label: "Consistência", value: profile?.consistency ?? metricsFromJson?.consistency ?? 0, color: "#FF9900" },
   ];
 
   const getDynamicPhrase = () => {
-    const consistency = profile?.consistency || 0;
-    const flags = profile?.behavioral_flags as any;
+    const consistency = (profile?.consistency ?? metricsFromJson?.consistency ?? 0) as number;
+    const flags = (profile?.behavioral_flags as Record<string, unknown> | null) || metricsFromJson?.flags || null;
 
-    if (flags?.autoEdicao) return "Você não respondeu… você recalculou.";
+    const autoEdicaoAtiva = !!flags && typeof flags === "object" && (flags as Record<string, unknown>).autoEdicao === true;
+    if (autoEdicaoAtiva) return "Você não respondeu… você recalculou.";
     if (consistency > 90) return "Sua leitura comportamental apresenta estabilidade incomum.";
     if (consistency > 70) return "O sistema detectou ajustes no seu padrão de resposta.";
     if (consistency > 0) return "Seu comportamento indica adaptação ativa ao sistema.";

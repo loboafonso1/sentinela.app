@@ -1,81 +1,133 @@
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 
-const questions = [
+type BehavioralFlags = {
+  autoEdicao: boolean;
+  controleConsciente: boolean;
+};
+
+type AnswerRecord = {
+  pergunta_id: number;
+  resposta_escolhida: string;
+  tempo_resposta_ms: number;
+};
+
+type AnalysisQuestion = {
+  id: number;
+  question: string;
+  options: string[];
+  image: string;
+  audio: string;
+};
+
+type ProfileSnapshot = {
+  xp: number | null;
+  reasoning: number | null;
+  onboarding_answers: unknown;
+  last_analysis_data: unknown;
+  behavioral_flags: unknown;
+  attention: number | null;
+  perception: number | null;
+  consistency: number | null;
+};
+
+const isAnswerRecord = (v: unknown): v is AnswerRecord => {
+  if (!v || typeof v !== "object") return false;
+  const r = v as Record<string, unknown>;
+  return (
+    typeof r.pergunta_id === "number" &&
+    typeof r.resposta_escolhida === "string" &&
+    typeof r.tempo_resposta_ms === "number"
+  );
+};
+
+const questions: AnalysisQuestion[] = [
   {
     id: 1,
     question: "Quando você ouve a palavra 'escuro', o que vem primeiro?",
     options: ["Medo", "Silêncio", "Descanso", "Algo te observando"],
-    image: "/images/questions/pergunta_1.jpg"
+    image: "/images/questions/pergunta1.jpg",
+    audio: "/audio/analise de padroes p1.mp3"
   },
   {
     id: 2,
     question: "Você está sozinho em casa. De repente… ouve um barulho.",
     options: ["Ignora", "Vai investigar", "Fica alerta, mas não se move", "Pega algo para se defender"],
-    image: "/images/questions/pergunta_2.jpg"
+    image: "/images/questions/pergunta2.jpg",
+    audio: "/audio/analise de padroes p2.mp3"
   },
   {
     id: 3,
     question: "Alguém te observa sem falar nada. O que você sente?",
     options: ["Desconforto", "Curiosidade", "Indiferença", "Ameaça"],
-    image: "/images/questions/pergunta_3.jpg"
+    image: "/images/questions/pergunta3.jpg",
+    audio: "/audio/analise de padroes p3.mp3"
   },
   {
     id: 4,
     question: "Você já teve a sensação de que alguém te observa… mesmo sozinho?",
     options: ["Nunca", "Às vezes", "Frequentemente", "Sempre"],
-    image: "/images/questions/pergunta_4.jpg"
+    image: "/images/questions/pergunta4.jpg",
+    audio: "/audio/analise de padroes p4.mp3"
   },
   {
     id: 5,
     question: "Se seu celular começasse a agir sozinho, você pensaria:",
     options: ["Bug", "Hacker", "Coincidência estranha", "Algo maior acontecendo"],
-    image: "/images/questions/pergunta_5.jpg"
+    image: "/images/questions/pergunta5.jpg",
+    audio: "/audio/analise de padroes p5.mp3"
   },
   {
     id: 6,
     question: "Você confia totalmente na tecnologia?",
     options: ["Sim", "Parcialmente", "Não muito", "Não confio"],
-    image: "/images/questions/pergunta_6.jpg"
+    image: "/images/questions/pergunta6.jpg",
+    audio: "/audio/analise de padroes p6.mp3"
   },
   {
     id: 7,
     question: "Em uma situação de perigo, você age mais por:",
     options: ["Razão", "Instinto", "Medo", "Estratégia"],
-    image: "/images/questions/pergunta_7.jpg"
+    image: "/images/questions/pergunta7.jpg",
+    audio: "/audio/analise de padroes p7.mp3"
   },
   {
     id: 8,
     question: "Se alguém te trai, sua primeira reação é:",
     options: ["Se afastar", "Confrontar", "Ignorar", "Planejar algo"],
-    image: "/images/questions/pergunta_8.jpg"
+    image: "/images/questions/pergunta8.jpg",
+    audio: "/audio/analise de padroes p8.mp3"
   },
   {
     id: 9,
     question: "Você prefere:",
     options: ["Segurança", "Liberdade", "Controle", "Poder"],
-    image: "/images/questions/pergunta_9.jpg"
+    image: "/images/questions/pergunta9.jpg",
+    audio: "/audio/analise de padroes p9.mp3"
   },
   {
     id: 10,
     question: "Você se vê como alguém:",
     options: ["Observador", "Reativo", "Calculista", "Imprevisível"],
-    image: "/images/questions/pergunta_10.jpg"
+    image: "/images/questions/pergunta10.jpg",
+    audio: "/audio/analise de padroes p10.mp3"
   },
   {
     id: 11,
     question: "Se ninguém estivesse te observando, você:",
     options: ["Seria o mesmo", "Mudaria um pouco", "Mudaria muito", "Não sabe"],
-    image: "/images/questions/pergunta_11.jpg"
+    image: "/images/questions/pergunta11.jpg",
+    audio: "/audio/analise de padroes p11.mp3"
   },
   {
     id: 12,
     question: "Você acredita que as pessoas escondem quem realmente são?",
     options: ["Não", "Às vezes", "Quase sempre", "Sempre"],
-    image: "/images/questions/pergunta_12.jpg"
+    image: "/images/questions/pergunta12.jpg",
+    audio: "/audio/analise de padroes p12.mp3"
   }
 ];
 
@@ -83,35 +135,64 @@ const AnalisePadroes = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState<any[]>([]);
+  const [answers, setAnswers] = useState<AnswerRecord[]>([]);
   const [timer, setTimer] = useState(0);
   const [showTransition, setShowTransition] = useState(false);
+  const [isAnswering, setIsAnswering] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
+  const questionAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioErrorOnce, setAudioErrorOnce] = useState(false);
 
-  useEffect(() => {
-    startTimer();
-    return () => stopTimer();
-  }, [currentStep]);
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+  }, []);
 
-  const startTimer = () => {
+  const startTimer = useCallback(() => {
     stopTimer();
     startTimeRef.current = Date.now();
     timerRef.current = setInterval(() => {
       const elapsed = Date.now() - startTimeRef.current;
       setTimer(elapsed);
     }, 10);
-  };
+  }, [stopTimer]);
 
-  const stopTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-  };
+  const audioRefCleanup = useCallback(() => {
+    if (!questionAudioRef.current) return;
+    questionAudioRef.current.pause();
+    questionAudioRef.current.currentTime = 0;
+    questionAudioRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    startTimer();
+    setIsAnswering(false);
+
+    const currentQuestion = questions[currentStep];
+    if (currentQuestion?.audio && user) {
+      const audio = new Audio(encodeURI(currentQuestion.audio));
+      audio.preload = "auto";
+      audioRefCleanup();
+      questionAudioRef.current = audio;
+      audio.play().catch(() => {
+        if (!audioErrorOnce) setAudioErrorOnce(true);
+      });
+    }
+
+    return () => {
+      stopTimer();
+      audioRefCleanup();
+    };
+  }, [audioErrorOnce, audioRefCleanup, currentStep, startTimer, stopTimer, user]);
 
   const handleAnswer = async (option: string) => {
+    if (isAnswering) return;
+    setIsAnswering(true);
     const responseTime = Date.now() - startTimeRef.current;
     stopTimer();
+    audioRefCleanup();
 
-    const newAnswer = {
+    const newAnswer: AnswerRecord = {
       pergunta_id: questions[currentStep].id,
       resposta_escolhida: option,
       tempo_resposta_ms: responseTime
@@ -127,23 +208,43 @@ const AnalisePadroes = () => {
     }
   };
 
-  const finishAnalysis = async (allAnswers: any[]) => {
+  const finishAnalysis = async (allAnswers: AnswerRecord[]) => {
     setShowTransition(true);
     
-    // 1. Cálculo de Consistência
     let consistencia = 100;
     let autoEdicao = false;
     let controleConsciente = false;
 
-    // Buscar tentativa anterior no Supabase
     const { data: profile } = await supabase
       .from("profiles")
-      .select("last_analysis_data, attention, reasoning, perception, consistency, xp")
+      .select("xp, reasoning, onboarding_answers, last_analysis_data, attention, perception, consistency, behavioral_flags")
       .eq("id", user?.id)
       .single();
 
-    if (profile?.last_analysis_data) {
-      const lastAnswers = profile.last_analysis_data as any[];
+    const profileSnapshot = profile as unknown as ProfileSnapshot | null;
+
+    const previousAttemptFromOnboarding = (() => {
+      const onboarding = profileSnapshot?.onboarding_answers;
+      if (!onboarding || typeof onboarding !== "object") return undefined;
+      const analysis = (onboarding as Record<string, unknown>).analysis;
+      if (!analysis || typeof analysis !== "object") return undefined;
+      const last = (analysis as Record<string, unknown>).last_attempt;
+      if (!Array.isArray(last)) return undefined;
+      const parsed = last.filter(isAnswerRecord);
+      return parsed.length ? parsed : undefined;
+    })();
+
+    const previousAttemptFromColumn = (() => {
+      const raw = profileSnapshot?.last_analysis_data;
+      if (!Array.isArray(raw)) return undefined;
+      const parsed = raw.filter(isAnswerRecord);
+      return parsed.length ? parsed : undefined;
+    })();
+
+    const previousAttempt = previousAttemptFromOnboarding || previousAttemptFromColumn;
+
+    if (previousAttempt) {
+      const lastAnswers = previousAttempt;
       let changedCount = 0;
       
       allAnswers.forEach((ans, idx) => {
@@ -154,11 +255,8 @@ const AnalisePadroes = () => {
 
       consistencia = Math.round(100 - (changedCount / questions.length * 100));
       
-      // Detecção de Autoedição (> 40% mudou)
       if ((changedCount / questions.length) > 0.4) autoEdicao = true;
       
-      // Detecção de Controle Consciente (redução de respostas emocionais)
-      // (Lógica simplificada: se mudou respostas de "Medo/Desconforto" para "Ignora/Indiferença")
       const emotionalTerms = ["Medo", "Desconforto", "Ameaça"];
       const neutralTerms = ["Ignora", "Indiferença", "Silêncio"];
       
@@ -173,8 +271,6 @@ const AnalisePadroes = () => {
       if (emotionalToNeutral > 2) controleConsciente = true;
     }
 
-    // 2. Ajuste das Outras Métricas
-    // ATENÇÃO: baseada no tempo médio
     const avgTime = allAnswers.reduce((acc, curr) => acc + curr.tempo_resposta_ms, 0) / allAnswers.length;
     let atencao = Math.round(Math.max(0, 100 - (avgTime / 5000 * 100))); // 5s como base 0
     if (consistencia > 80) atencao += 10;
@@ -185,10 +281,9 @@ const AnalisePadroes = () => {
     const percepcao = Math.round((vigilanceCount / questions.length) * 100 + 20); // Base + 20
 
     // RACIOCÍNIO: tempo médio + padrão equilibrado
-    let raciocinio = Math.round(profile?.reasoning || 70);
+    let raciocinio = Math.round(profileSnapshot?.reasoning ?? 70);
     if (avgTime > 1500 && avgTime < 3500) raciocinio += 5; // Tempo equilibrado indica reflexão
 
-    // 3. Sistema de XP
     let totalXpGain = 0;
     allAnswers.forEach(ans => {
       if (ans.tempo_resposta_ms < 1500) totalXpGain += 50;
@@ -197,20 +292,54 @@ const AnalisePadroes = () => {
     });
     if (consistencia > 90) totalXpGain += 200;
 
-    // 4. Salvar tudo no Supabase
+    const metricsPayload = {
+      xp_gain: totalXpGain,
+      attention: Math.min(100, atencao),
+      reasoning: Math.min(100, raciocinio),
+      perception: Math.min(100, percepcao),
+      consistency: Math.min(100, consistencia),
+      flags: { autoEdicao, controleConsciente },
+      finished_at: new Date().toISOString()
+    };
+
     if (user) {
-      await supabase
+      const nextOnboarding = {
+        ...(profileSnapshot?.onboarding_answers && typeof profileSnapshot.onboarding_answers === "object"
+          ? (profileSnapshot.onboarding_answers as Record<string, unknown>)
+          : {}),
+        analysis: {
+          last_attempt: allAnswers,
+          previous_attempt: previousAttempt || null,
+          diff: previousAttempt
+            ? {
+                changed_count: allAnswers.filter((ans, idx) => previousAttempt[idx]?.resposta_escolhida !== ans.resposta_escolhida).length,
+                total: questions.length
+              }
+            : null,
+          metrics: metricsPayload
+        }
+      };
+
+      const { error: updateErr } = await supabase
         .from("profiles")
         .update({ 
-          xp: (profile?.xp || 0) + totalXpGain,
+          xp: ((profileSnapshot?.xp ?? 0) || 0) + totalXpGain,
           consistency: Math.min(100, consistencia),
           attention: Math.min(100, atencao),
           perception: Math.min(100, percepcao),
           reasoning: Math.min(100, raciocinio),
           last_analysis_data: allAnswers,
-          behavioral_flags: { autoEdicao, controleConsciente }
+          behavioral_flags: { autoEdicao, controleConsciente },
+          onboarding_answers: nextOnboarding
         })
         .eq("id", user.id);
+
+      if (updateErr) {
+        await supabase
+          .from("profiles")
+          .update({ onboarding_answers: nextOnboarding })
+          .eq("id", user.id);
+      }
     }
 
     // Navegar para resultado
@@ -269,9 +398,24 @@ const AnalisePadroes = () => {
             className="w-full max-w-md space-y-12"
           >
             {currentQuestion.image && (
-              <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
-                <img src={currentQuestion.image} alt="Contexto" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="relative w-full aspect-video rounded-[2.5rem] overflow-hidden">
+                <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-br from-[#7A00FF]/50 via-[#00F2FF]/10 to-[#FF00D9]/40 opacity-40 blur-xl" />
+                <div className="relative w-full h-full rounded-[2.5rem] overflow-hidden border border-white/10 bg-black/30 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+                  <img src={currentQuestion.image} alt="Contexto" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(122,0,255,0.25)_0%,_transparent_55%)]" />
+                  <div className="absolute top-5 right-5 w-16 h-24 rounded-[999px] overflow-hidden border border-[#7A00FF]/30 bg-black shadow-[0_0_30px_rgba(122,0,255,0.35)]">
+                    <video
+                      src="/video/ia_avatar.mp4"
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover scale-110 opacity-80"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  </div>
+                </div>
               </div>
             )}
 
@@ -281,13 +425,22 @@ const AnalisePadroes = () => {
 
             <div className="grid grid-cols-1 gap-3">
               {currentQuestion.options.map((option, idx) => (
-                <button
+                <motion.button
                   key={idx}
                   onClick={() => handleAnswer(option)}
-                  className="w-full py-5 px-8 bg-white/5 border border-white/10 rounded-2xl text-left text-sm font-medium hover:bg-white/10 active:bg-[#7A00FF]/20 active:border-[#7A00FF]/50 transition-all backdrop-blur-xl"
+                  disabled={isAnswering}
+                  whileTap={{ scale: 0.98 }}
+                  className={`group relative w-full rounded-2xl text-left transition-all ${
+                    isAnswering ? "opacity-60" : "opacity-100"
+                  }`}
                 >
-                  {option}
-                </button>
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#7A00FF]/60 via-[#00F2FF]/20 to-[#FF00D9]/50 opacity-30 blur-md" />
+                  <div className="relative w-full py-5 px-8 rounded-2xl bg-black/30 border border-white/10 backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+                    <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-40" />
+                    <div className="absolute inset-0 rounded-2xl opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none bg-white/[0.03]" />
+                    <span className="text-sm font-semibold tracking-wide text-white/90">{option}</span>
+                  </div>
+                </motion.button>
               ))}
             </div>
           </motion.div>
