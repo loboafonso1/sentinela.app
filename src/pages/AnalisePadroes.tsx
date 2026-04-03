@@ -49,84 +49,84 @@ const questions: AnalysisQuestion[] = [
     id: 1,
     question: "Quando você ouve a palavra 'escuro', o que vem primeiro?",
     options: ["Medo", "Silêncio", "Descanso", "Algo te observando"],
-    image: "/images/questions/pergunta1.jpg",
+    image: "/images/pergunta1.jpg",
     audio: "/audio/analise de padroes p1.mp3"
   },
   {
     id: 2,
     question: "Você está sozinho em casa. De repente… ouve um barulho.",
     options: ["Ignora", "Vai investigar", "Fica alerta, mas não se move", "Pega algo para se defender"],
-    image: "/images/questions/pergunta2.jpg",
+    image: "/images/pergunta2.jpg",
     audio: "/audio/analise de padroes p2.mp3"
   },
   {
     id: 3,
     question: "Alguém te observa sem falar nada. O que você sente?",
     options: ["Desconforto", "Curiosidade", "Indiferença", "Ameaça"],
-    image: "/images/questions/pergunta3.jpg",
+    image: "/images/pergunta3.jpg",
     audio: "/audio/analise de padroes p3.mp3"
   },
   {
     id: 4,
     question: "Você já teve a sensação de que alguém te observa… mesmo sozinho?",
     options: ["Nunca", "Às vezes", "Frequentemente", "Sempre"],
-    image: "/images/questions/pergunta4.jpg",
+    image: "/images/pergunta4.jpg",
     audio: "/audio/analise de padroes p4.mp3"
   },
   {
     id: 5,
     question: "Se seu celular começasse a agir sozinho, você pensaria:",
     options: ["Bug", "Hacker", "Coincidência estranha", "Algo maior acontecendo"],
-    image: "/images/questions/pergunta5.jpg",
+    image: "/images/pergunta5.jpg",
     audio: "/audio/analise de padroes p5.mp3"
   },
   {
     id: 6,
     question: "Você confia totalmente na tecnologia?",
     options: ["Sim", "Parcialmente", "Não muito", "Não confio"],
-    image: "/images/questions/pergunta6.jpg",
+    image: "/images/pergunta6.jpg",
     audio: "/audio/analise de padroes p6.mp3"
   },
   {
     id: 7,
     question: "Em uma situação de perigo, você age mais por:",
     options: ["Razão", "Instinto", "Medo", "Estratégia"],
-    image: "/images/questions/pergunta7.jpg",
+    image: "/images/pergunta7.jpg",
     audio: "/audio/analise de padroes p7.mp3"
   },
   {
     id: 8,
     question: "Se alguém te trai, sua primeira reação é:",
     options: ["Se afastar", "Confrontar", "Ignorar", "Planejar algo"],
-    image: "/images/questions/pergunta8.jpg",
+    image: "/images/pergunta8.jpg",
     audio: "/audio/analise de padroes p8.mp3"
   },
   {
     id: 9,
     question: "Você prefere:",
     options: ["Segurança", "Liberdade", "Controle", "Poder"],
-    image: "/images/questions/pergunta9.jpg",
+    image: "/images/pergunta9.jpg",
     audio: "/audio/analise de padroes p9.mp3"
   },
   {
     id: 10,
     question: "Você se vê como alguém:",
     options: ["Observador", "Reativo", "Calculista", "Imprevisível"],
-    image: "/images/questions/pergunta10.jpg",
+    image: "/images/pergunta10.jpg",
     audio: "/audio/analise de padroes p10.mp3"
   },
   {
     id: 11,
     question: "Se ninguém estivesse te observando, você:",
     options: ["Seria o mesmo", "Mudaria um pouco", "Mudaria muito", "Não sabe"],
-    image: "/images/questions/pergunta11.jpg",
+    image: "/images/pergunta11.jpg",
     audio: "/audio/analise de padroes p11.mp3"
   },
   {
     id: 12,
     question: "Você acredita que as pessoas escondem quem realmente são?",
     options: ["Não", "Às vezes", "Quase sempre", "Sempre"],
-    image: "/images/questions/pergunta12.jpg",
+    image: "/images/pergunta12.jpg",
     audio: "/audio/analise de padroes p12.mp3"
   }
 ];
@@ -139,10 +139,12 @@ const AnalisePadroes = () => {
   const [timer, setTimer] = useState(0);
   const [showTransition, setShowTransition] = useState(false);
   const [isAnswering, setIsAnswering] = useState(false);
+  const [questionImageSrc, setQuestionImageSrc] = useState<string>("");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
   const questionAudioRef = useRef<HTMLAudioElement | null>(null);
   const [audioErrorOnce, setAudioErrorOnce] = useState(false);
+  const imageCandidatesRef = useRef<string[]>([]);
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -169,6 +171,23 @@ const AnalisePadroes = () => {
     setIsAnswering(false);
 
     const currentQuestion = questions[currentStep];
+
+    const id = currentQuestion.id;
+    const candidates = [
+      `/images/pergunta${id}.jpg`,
+      `/images/questions/pergunta${id}.jpg`,
+      `/images/pergunta${id}.jpeg`,
+      `/images/questions/pergunta${id}.jpeg`,
+      `/images/pergunta${id}.png`,
+      `/images/questions/pergunta${id}.png`,
+      `/images/pergunta${id}.jpg.jpg`,
+      `/images/questions/pergunta${id}.jpg.jpg`,
+      currentQuestion.image
+    ].filter((v, i, arr) => !!v && arr.indexOf(v) === i);
+
+    imageCandidatesRef.current = candidates;
+    setQuestionImageSrc(candidates[0] ?? "");
+
     if (currentQuestion?.audio && user) {
       const audio = new Audio(encodeURI(currentQuestion.audio));
       audio.preload = "auto";
@@ -184,6 +203,12 @@ const AnalisePadroes = () => {
       audioRefCleanup();
     };
   }, [audioErrorOnce, audioRefCleanup, currentStep, startTimer, stopTimer, user]);
+
+  const handleQuestionImageError = () => {
+    const remaining = imageCandidatesRef.current.slice(1);
+    imageCandidatesRef.current = remaining;
+    setQuestionImageSrc(remaining[0] ?? "");
+  };
 
   const handleAnswer = async (option: string) => {
     if (isAnswering) return;
@@ -303,6 +328,19 @@ const AnalisePadroes = () => {
     };
 
     if (user) {
+      try {
+        localStorage.setItem(
+          `sentinela:analysis:lastMetrics:${user.id}`,
+          JSON.stringify(metricsPayload)
+        );
+        localStorage.setItem(
+          `sentinela:analysis:lastAttempt:${user.id}`,
+          JSON.stringify(allAnswers)
+        );
+      } catch {
+        // ignore
+      }
+
       const nextOnboarding = {
         ...(profileSnapshot?.onboarding_answers && typeof profileSnapshot.onboarding_answers === "object"
           ? (profileSnapshot.onboarding_answers as Record<string, unknown>)
@@ -397,11 +435,11 @@ const AnalisePadroes = () => {
             exit={{ opacity: 0, x: -20 }}
             className="w-full max-w-md space-y-12"
           >
-            {currentQuestion.image && (
+            {questionImageSrc && (
               <div className="relative w-full aspect-video rounded-[2.5rem] overflow-hidden">
                 <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-br from-[#7A00FF]/50 via-[#00F2FF]/10 to-[#FF00D9]/40 opacity-40 blur-xl" />
                 <div className="relative w-full h-full rounded-[2.5rem] overflow-hidden border border-white/10 bg-black/30 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
-                  <img src={currentQuestion.image} alt="Contexto" className="w-full h-full object-cover" />
+                  <img src={questionImageSrc} onError={handleQuestionImageError} alt="Contexto" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(122,0,255,0.25)_0%,_transparent_55%)]" />
                   <div className="absolute top-5 right-5 w-16 h-24 rounded-[999px] overflow-hidden border border-[#7A00FF]/30 bg-black shadow-[0_0_30px_rgba(122,0,255,0.35)]">

@@ -33,6 +33,13 @@ const ResultadoAnalise = () => {
     return () => clearInterval(timer);
   }, [targetXp]);
 
+  useEffect(() => {
+    if (!targetXp || targetXp <= 0) return;
+    if (xpCount < targetXp) return;
+    const t = setTimeout(() => navigate("/progresso"), 900);
+    return () => clearTimeout(t);
+  }, [navigate, targetXp, xpCount]);
+
   return (
     <div className="fixed inset-0 bg-[#0A0014] text-white flex flex-col items-center justify-center font-sans p-8 overflow-hidden">
       {/* Background Effects */}

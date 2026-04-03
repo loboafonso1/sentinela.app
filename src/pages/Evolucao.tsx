@@ -22,6 +22,7 @@ const Progresso = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [localMetrics, setLocalMetrics] = useState<MetricsPayload | undefined>(undefined);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -33,10 +34,37 @@ const Progresso = () => {
           .single();
         setProfile(data);
         setLoading(false);
+      } else {
+        setLoading(false);
       }
     };
     fetchProfile();
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    try {
+      const raw = localStorage.getItem(`sentinela:analysis:lastMetrics:${user.id}`);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const attention = typeof parsed.attention === "number" ? parsed.attention : undefined;
+      const reasoning = typeof parsed.reasoning === "number" ? parsed.reasoning : undefined;
+      const perception = typeof parsed.perception === "number" ? parsed.perception : undefined;
+      const consistency = typeof parsed.consistency === "number" ? parsed.consistency : undefined;
+      if (attention === undefined || reasoning === undefined || perception === undefined || consistency === undefined) return;
+      const flagsRaw = parsed.flags;
+      const flags =
+        flagsRaw && typeof flagsRaw === "object"
+          ? {
+              autoEdicao: (flagsRaw as Record<string, unknown>).autoEdicao === true,
+              controleConsciente: (flagsRaw as Record<string, unknown>).controleConsciente === true
+            }
+          : undefined;
+      setLocalMetrics({ attention, reasoning, perception, consistency, flags });
+    } catch {
+      // ignore
+    }
+  }, [user?.id]);
 
   const metricsFromJson = (() => {
     const onboarding = profile?.onboarding_answers;
@@ -63,15 +91,19 @@ const Progresso = () => {
   })();
 
   const stats = [
-    { label: "Atenção", value: profile?.attention ?? metricsFromJson?.attention ?? 0, color: "#7A00FF" },
-    { label: "Raciocínio", value: profile?.reasoning ?? metricsFromJson?.reasoning ?? 0, color: "#00F2FF" },
-    { label: "Percepção", value: profile?.perception ?? metricsFromJson?.perception ?? 0, color: "#FF00D9" },
-    { label: "Consistência", value: profile?.consistency ?? metricsFromJson?.consistency ?? 0, color: "#FF9900" },
+    { label: "Atenção", value: profile?.attention ?? metricsFromJson?.attention ?? localMetrics?.attention ?? 0, color: "#7A00FF" },
+    { label: "Raciocínio", value: profile?.reasoning ?? metricsFromJson?.reasoning ?? localMetrics?.reasoning ?? 0, color: "#00F2FF" },
+    { label: "Percepção", value: profile?.perception ?? metricsFromJson?.perception ?? localMetrics?.perception ?? 0, color: "#FF00D9" },
+    { label: "Consistência", value: profile?.consistency ?? metricsFromJson?.consistency ?? localMetrics?.consistency ?? 0, color: "#FF9900" },
   ];
 
   const getDynamicPhrase = () => {
-    const consistency = (profile?.consistency ?? metricsFromJson?.consistency ?? 0) as number;
-    const flags = (profile?.behavioral_flags as Record<string, unknown> | null) || metricsFromJson?.flags || null;
+    const consistency = (profile?.consistency ?? metricsFromJson?.consistency ?? localMetrics?.consistency ?? 0) as number;
+    const flags =
+      (profile?.behavioral_flags as Record<string, unknown> | null) ||
+      metricsFromJson?.flags ||
+      localMetrics?.flags ||
+      null;
 
     const autoEdicaoAtiva = !!flags && typeof flags === "object" && (flags as Record<string, unknown>).autoEdicao === true;
     if (autoEdicaoAtiva) return "Você não respondeu… você recalculou.";
