@@ -9,6 +9,7 @@ const ResultadoAnalise = () => {
   const [xpCount, setXpCount] = useState(0);
   
   const targetXp = location.state?.xp || 0;
+  const metrics = location.state?.metrics;
 
   useEffect(() => {
     if (!targetXp || targetXp <= 0) {
@@ -36,9 +37,9 @@ const ResultadoAnalise = () => {
   useEffect(() => {
     if (!targetXp || targetXp <= 0) return;
     if (xpCount < targetXp) return;
-    const t = setTimeout(() => navigate("/progresso"), 900);
+    const t = setTimeout(() => navigate("/progresso", { state: { metrics } }), 900);
     return () => clearTimeout(t);
-  }, [navigate, targetXp, xpCount]);
+  }, [metrics, navigate, targetXp, xpCount]);
 
   return (
     <div className="fixed inset-0 bg-[#0A0014] text-white flex flex-col items-center justify-center font-sans p-8 overflow-hidden">
@@ -108,7 +109,7 @@ const ResultadoAnalise = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 2.5 }}
-          onClick={() => navigate("/progresso")}
+          onClick={() => navigate("/progresso", { state: { metrics } })}
           className="w-full max-w-[280px] py-6 bg-white text-black rounded-[2rem] font-bold tracking-[0.4em] uppercase text-[11px] flex items-center justify-center gap-4 shadow-[0_10px_40px_rgba(255,255,255,0.15)] active:scale-[0.98] transition-all mx-auto"
         >
           <Trophy className="w-4 h-4" />

@@ -4,7 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
 
 type ProfileRow = Tables<"profiles">;
@@ -19,10 +19,12 @@ type MetricsPayload = {
 
 const Progresso = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [localMetrics, setLocalMetrics] = useState<MetricsPayload | undefined>(undefined);
+  const navMetrics = (location.state as { metrics?: MetricsPayload } | null)?.metrics;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -91,14 +93,14 @@ const Progresso = () => {
   })();
 
   const stats = [
-    { label: "Atenção", value: profile?.attention ?? metricsFromJson?.attention ?? localMetrics?.attention ?? 0, color: "#7A00FF" },
-    { label: "Raciocínio", value: profile?.reasoning ?? metricsFromJson?.reasoning ?? localMetrics?.reasoning ?? 0, color: "#00F2FF" },
-    { label: "Percepção", value: profile?.perception ?? metricsFromJson?.perception ?? localMetrics?.perception ?? 0, color: "#FF00D9" },
-    { label: "Consistência", value: profile?.consistency ?? metricsFromJson?.consistency ?? localMetrics?.consistency ?? 0, color: "#FF9900" },
+    { label: "Atenção", value: navMetrics?.attention ?? profile?.attention ?? metricsFromJson?.attention ?? localMetrics?.attention ?? 0, color: "#7A00FF" },
+    { label: "Raciocínio", value: navMetrics?.reasoning ?? profile?.reasoning ?? metricsFromJson?.reasoning ?? localMetrics?.reasoning ?? 0, color: "#00F2FF" },
+    { label: "Percepção", value: navMetrics?.perception ?? profile?.perception ?? metricsFromJson?.perception ?? localMetrics?.perception ?? 0, color: "#FF00D9" },
+    { label: "Consistência", value: navMetrics?.consistency ?? profile?.consistency ?? metricsFromJson?.consistency ?? localMetrics?.consistency ?? 0, color: "#FF9900" },
   ];
 
   const getDynamicPhrase = () => {
-    const consistency = (profile?.consistency ?? metricsFromJson?.consistency ?? localMetrics?.consistency ?? 0) as number;
+    const consistency = (navMetrics?.consistency ?? profile?.consistency ?? metricsFromJson?.consistency ?? localMetrics?.consistency ?? 0) as number;
     const flags =
       (profile?.behavioral_flags as Record<string, unknown> | null) ||
       metricsFromJson?.flags ||

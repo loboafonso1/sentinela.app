@@ -382,7 +382,7 @@ const AnalisePadroes = () => {
 
     // Navegar para resultado
     setTimeout(() => {
-      navigate("/resultado-analise", { state: { xp: totalXpGain } });
+      navigate("/resultado-analise", { state: { xp: totalXpGain, metrics: metricsPayload } });
     }, 3000);
   };
 
