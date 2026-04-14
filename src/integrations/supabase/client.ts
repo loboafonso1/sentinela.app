@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const FALLBACK_PROJECT_REF = "caygekeonqhaycjxppel";
+const SUPABASE_URL =
+  typeof import.meta.env.VITE_SUPABASE_URL === "string" &&
+  import.meta.env.VITE_SUPABASE_URL.includes(FALLBACK_PROJECT_REF)
+    ? import.meta.env.VITE_SUPABASE_URL
+    : `https://${FALLBACK_PROJECT_REF}.supabase.co`;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>;
