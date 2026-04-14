@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+type LocalUser = {
+  id: string;
+  email: string;
+};
+
+const STORAGE_KEY = "sentinela_local_user";
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<LocalUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   const clearLocalProgressForUserChange = () => {
@@ -25,44 +30,56 @@ export function useAuth() {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-      try {
-        const prevEmail = (localStorage.getItem("sentinela_email") || "").toLowerCase();
-        const nextEmail = (session?.user?.email || "").toLowerCase();
-        if (prevEmail !== nextEmail) {
-          clearLocalProgressForUserChange();
-          if (nextEmail) localStorage.setItem("sentinela_email", nextEmail);
-          else localStorage.removeItem("sentinela_email");
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        const id = typeof parsed.id === "string" ? parsed.id : "";
+        const email = typeof parsed.email === "string" ? parsed.email : "";
+        if (id && email) {
+          setUser({ id, email });
+          localStorage.setItem("sentinela_email", email.toLowerCase());
+          localStorage.setItem("sentinela_user_id", id);
+        } else {
+          setUser(null);
         }
-        if (session?.user?.id) localStorage.setItem("sentinela_user_id", session.user.id);
-        else localStorage.removeItem("sentinela_user_id");
-      } catch { void 0; }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    } finally {
       setLoading(false);
-      try {
-        const prevEmail = (localStorage.getItem("sentinela_email") || "").toLowerCase();
-        const nextEmail = (session?.user?.email || "").toLowerCase();
-        if (prevEmail !== nextEmail) {
-          clearLocalProgressForUserChange();
-          if (nextEmail) localStorage.setItem("sentinela_email", nextEmail);
-          else localStorage.removeItem("sentinela_email");
-        }
-        if (session?.user?.id) localStorage.setItem("sentinela_user_id", session.user.id);
-        else localStorage.removeItem("sentinela_user_id");
-      } catch { void 0; }
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
+  const signIn = useCallback((emailInput?: string) => {
+    const nextEmail = (emailInput || "").trim() || "usuario@sentinela.local";
+    const prevEmail = (localStorage.getItem("sentinela_email") || "").toLowerCase();
+    const emailLower = nextEmail.toLowerCase();
+    if (prevEmail && prevEmail !== emailLower) clearLocalProgressForUserChange();
 
-  return { user, loading, signOut };
+    const id =
+      localStorage.getItem("sentinela_user_id") ||
+      (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+    const nextUser: LocalUser = { id, email: nextEmail };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
+    localStorage.setItem("sentinela_email", emailLower);
+    localStorage.setItem("sentinela_user_id", id);
+    setUser(nextUser);
+  }, []);
+
+  const signOut = useCallback(async () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("sentinela_email");
+      localStorage.removeItem("sentinela_user_id");
+    } catch {
+      void 0;
+    }
+    setUser(null);
+  }, []);
+
+  return { user, loading, signIn, signOut };
 }

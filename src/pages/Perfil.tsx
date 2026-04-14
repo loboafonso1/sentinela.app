@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { User, Shield, Award, LogOut, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import BottomNav from "@/components/BottomNav";
 
 const Perfil = () => {
@@ -10,17 +9,14 @@ const Perfil = () => {
   const [levelName, setLevelName] = useState("Carregando...");
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("user_level_name")
-          .eq("id", user.id)
-          .single();
-        if (data?.user_level_name) setLevelName(data.user_level_name);
-      }
-    };
-    fetchProfile();
+    try {
+      const id = user?.id;
+      const byUser = id ? localStorage.getItem(`sentinela:user_level_name:${id}`) : null;
+      const fallback = localStorage.getItem("user_level_name");
+      setLevelName(byUser || fallback || "Nível não definido");
+    } catch {
+      setLevelName("Nível não definido");
+    }
   }, [user]);
 
   return (

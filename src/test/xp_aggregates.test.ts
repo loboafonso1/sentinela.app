@@ -6,12 +6,20 @@ describe("XP aggregates", () => {
   });
 
   it("sums xp for day/week/month/year", () => {
-    const base = new Date();
-    base.setHours(10, 0, 0, 0);
-    // today
+    const now = new Date();
+    const day = now.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    const monday = new Date(now);
+    monday.setHours(10, 0, 0, 0);
+    monday.setDate(now.getDate() + diff);
+
+    const base = new Date(monday);
+    base.setDate(monday.getDate() + 2);
+
     addXpEvent(100, base);
-    // this week other day
-    const other = new Date(base); other.setDate(base.getDate() - 2);
+
+    const other = new Date(monday);
+    other.setDate(monday.getDate() + 1);
     addXpEvent(100, other);
     // previous month
     const prevMonth = new Date(base.getFullYear(), base.getMonth() - 1, 5, 12);

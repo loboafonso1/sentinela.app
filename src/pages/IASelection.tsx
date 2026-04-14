@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Eye, Search, Zap, Crown } from "lucide-react";
@@ -112,12 +111,11 @@ const IASelection = () => {
     setSelectedLevel(level.id);
     // Não escondemos os botões imediatamente, apenas desabilitamos a interação via state
     // mas vamos manter o usuário na mesma tela conforme solicitado.
-    
-    if (user) {
-      await supabase
-        .from("profiles")
-        .update({ user_level_name: level.label })
-        .eq("id", user.id);
+    try {
+      localStorage.setItem("user_level_name", level.label);
+      if (user?.id) localStorage.setItem(`sentinela:user_level_name:${user.id}`, level.label);
+    } catch {
+      void 0;
     }
 
     // Delay profissional de 500ms antes de iniciar o áudio

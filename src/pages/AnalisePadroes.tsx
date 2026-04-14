@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 
 type BehavioralFlags = {
@@ -21,17 +20,6 @@ type AnalysisQuestion = {
   options: string[];
   image: string;
   audio: string;
-};
-
-type ProfileSnapshot = {
-  xp: number | null;
-  reasoning: number | null;
-  onboarding_answers: unknown;
-  last_analysis_data: unknown;
-  behavioral_flags: unknown;
-  attention: number | null;
-  perception: number | null;
-  consistency: number | null;
 };
 
 const isAnswerRecord = (v: unknown): v is AnswerRecord => {
@@ -240,33 +228,19 @@ const AnalisePadroes = () => {
     let autoEdicao = false;
     let controleConsciente = false;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("xp, reasoning, onboarding_answers, last_analysis_data, attention, perception, consistency, behavioral_flags")
-      .eq("id", user?.id)
-      .single();
-
-    const profileSnapshot = profile as unknown as ProfileSnapshot | null;
-
-    const previousAttemptFromOnboarding = (() => {
-      const onboarding = profileSnapshot?.onboarding_answers;
-      if (!onboarding || typeof onboarding !== "object") return undefined;
-      const analysis = (onboarding as Record<string, unknown>).analysis;
-      if (!analysis || typeof analysis !== "object") return undefined;
-      const last = (analysis as Record<string, unknown>).last_attempt;
-      if (!Array.isArray(last)) return undefined;
-      const parsed = last.filter(isAnswerRecord);
-      return parsed.length ? parsed : undefined;
+    const userId = user?.id || "local";
+    const previousAttempt = (() => {
+      try {
+        const raw = localStorage.getItem(`sentinela:analysis:lastAttempt:${userId}`);
+        if (!raw) return undefined;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return undefined;
+        const ok = parsed.filter(isAnswerRecord);
+        return ok.length ? ok : undefined;
+      } catch {
+        return undefined;
+      }
     })();
-
-    const previousAttemptFromColumn = (() => {
-      const raw = profileSnapshot?.last_analysis_data;
-      if (!Array.isArray(raw)) return undefined;
-      const parsed = raw.filter(isAnswerRecord);
-      return parsed.length ? parsed : undefined;
-    })();
-
-    const previousAttempt = previousAttemptFromOnboarding || previousAttemptFromColumn;
 
     if (previousAttempt) {
       const lastAnswers = previousAttempt;
@@ -306,7 +280,16 @@ const AnalisePadroes = () => {
     const percepcao = Math.round((vigilanceCount / questions.length) * 100 + 20); // Base + 20
 
     // RACIOCÍNIO: tempo médio + padrão equilibrado
-    let raciocinio = Math.round(profileSnapshot?.reasoning ?? 70);
+    let raciocinio = 70;
+    try {
+      const lastMetricsRaw = localStorage.getItem(`sentinela:analysis:lastMetrics:${userId}`);
+      if (lastMetricsRaw) {
+        const lastMetrics = JSON.parse(lastMetricsRaw) as Record<string, unknown>;
+        if (typeof lastMetrics.reasoning === "number") raciocinio = Math.round(lastMetrics.reasoning);
+      }
+    } catch {
+      void 0;
+    }
     if (avgTime > 1500 && avgTime < 3500) raciocinio += 5; // Tempo equilibrado indica reflexão
 
     let totalXpGain = 0;
@@ -327,57 +310,14 @@ const AnalisePadroes = () => {
       finished_at: new Date().toISOString()
     };
 
-    if (user) {
-      try {
-        localStorage.setItem(
-          `sentinela:analysis:lastMetrics:${user.id}`,
-          JSON.stringify(metricsPayload)
-        );
-        localStorage.setItem(
-          `sentinela:analysis:lastAttempt:${user.id}`,
-          JSON.stringify(allAnswers)
-        );
-      } catch {
-        // ignore
-      }
-
-      const nextOnboarding = {
-        ...(profileSnapshot?.onboarding_answers && typeof profileSnapshot.onboarding_answers === "object"
-          ? (profileSnapshot.onboarding_answers as Record<string, unknown>)
-          : {}),
-        analysis: {
-          last_attempt: allAnswers,
-          previous_attempt: previousAttempt || null,
-          diff: previousAttempt
-            ? {
-                changed_count: allAnswers.filter((ans, idx) => previousAttempt[idx]?.resposta_escolhida !== ans.resposta_escolhida).length,
-                total: questions.length
-              }
-            : null,
-          metrics: metricsPayload
-        }
-      };
-
-      const { error: updateErr } = await supabase
-        .from("profiles")
-        .update({ 
-          xp: ((profileSnapshot?.xp ?? 0) || 0) + totalXpGain,
-          consistency: Math.min(100, consistencia),
-          attention: Math.min(100, atencao),
-          perception: Math.min(100, percepcao),
-          reasoning: Math.min(100, raciocinio),
-          last_analysis_data: allAnswers,
-          behavioral_flags: { autoEdicao, controleConsciente },
-          onboarding_answers: nextOnboarding
-        })
-        .eq("id", user.id);
-
-      if (updateErr) {
-        await supabase
-          .from("profiles")
-          .update({ onboarding_answers: nextOnboarding })
-          .eq("id", user.id);
-      }
+    try {
+      const currentXpRaw = localStorage.getItem(`sentinela:xp:${userId}`) || "0";
+      const currentXp = Number(currentXpRaw) || 0;
+      localStorage.setItem(`sentinela:xp:${userId}`, String(currentXp + totalXpGain));
+      localStorage.setItem(`sentinela:analysis:lastMetrics:${userId}`, JSON.stringify(metricsPayload));
+      localStorage.setItem(`sentinela:analysis:lastAttempt:${userId}`, JSON.stringify(allAnswers));
+    } catch {
+      void 0;
     }
 
     // Navegar para resultado

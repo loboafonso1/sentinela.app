@@ -3,21 +3,8 @@ import "@testing-library/jest-dom";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import Onboarding from "@/pages/Onboarding";
 
-vi.mock("@/lib/supabaseClient", () => {
-  return {
-    supabase: {
-      auth: {
-        signInWithOAuth: vi.fn().mockResolvedValue({
-          data: { url: "https://example.com" },
-          error: null,
-        }),
-      },
-    },
-  };
-});
-
 describe("Onboarding", () => {
-  it("exibe apenas 'Entrar com Google' e não mostra Apple", () => {
+  it("exibe CTA de entrada e não mostra Apple", () => {
     render(
       <MemoryRouter initialEntries={["/"]}>
         <Routes>
@@ -25,21 +12,21 @@ describe("Onboarding", () => {
         </Routes>
       </MemoryRouter>
     );
-    expect(screen.getByRole("button", { name: /Entrar com Google/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Entrar/i })).toBeInTheDocument();
     expect(screen.queryByText(/Entrar com Apple/i)).toBeNull();
   });
 
-  it("aciona fluxo de OAuth do Google", async () => {
+  it("permite iniciar sessão local", async () => {
     render(
       <MemoryRouter initialEntries={["/"]}>
         <Routes>
           <Route path="/" element={<Onboarding />} />
+          <Route path="/ia-selection" element={<div>IA</div>} />
         </Routes>
       </MemoryRouter>
     );
-    const btn = screen.getByRole("button", { name: /Entrar com Google/i });
+    const btn = screen.getByRole("button", { name: /Entrar/i });
     fireEvent.click(btn);
-    const { supabase } = await import("@/lib/supabaseClient");
-    expect(supabase.auth.signInWithOAuth).toHaveBeenCalled();
+    expect(localStorage.getItem("sentinela_local_user")).toBeTruthy();
   });
 });
