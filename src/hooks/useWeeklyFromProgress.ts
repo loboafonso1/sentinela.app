@@ -1,35 +1,34 @@
-import { useMemo } from "react";
-import { type ModuleProgress, useModuleProgress } from "./useModuleProgress";
-import type { WeeklyDatum } from "@/components/WeeklyBars";
+type ProgressItem = {
+  id: string;
+  module_day: number;
+  completed: boolean;
+  completed_at: string;
+  quiz_score: number;
+};
 
-const days = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"] as const;
+export function computeWeeklyFromProgress(progress: ProgressItem[], weekStart: Date) {
+  const start = new Date(weekStart);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 7);
 
-export function computeWeeklyFromProgress(progress: ModuleProgress[], nowDate: Date = new Date()): WeeklyDatum[] {
-  const now = new Date(nowDate);
-  const day = now.getDay();
-  const diff = (day === 0 ? -6 : 1) - day;
-  const monday = new Date(now);
-  monday.setHours(0, 0, 0, 0);
-  monday.setDate(now.getDate() + diff);
+  const labels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+  const map = new Map<string, number>();
+  labels.forEach((l) => map.set(l, 0));
 
-  const map: Record<string, number> = {};
-  days.forEach((d) => (map[d] = 0));
+  progress
+    .filter((p) => p.completed && p.completed_at)
+    .forEach((p) => {
+      const d = new Date(p.completed_at);
+      if (Number.isNaN(d.getTime())) return;
+      if (d < start || d >= end) return;
 
-  for (const p of progress) {
-    if (!p.completed || !p.completed_at) continue;
-    const dt = new Date(p.completed_at);
-    dt.setHours(0, 0, 0, 0);
-    if (dt < monday) continue;
-    const offset = Math.floor((dt.getTime() - monday.getTime()) / (24 * 60 * 60 * 1000));
-    if (offset < 0 || offset > 6) continue;
-    const label = days[offset];
-    map[label] = 100;
-  }
+      const jsDay = d.getDay();
+      const idx = jsDay === 0 ? 6 : jsDay - 1;
+      const label = labels[idx];
+      map.set(label, 100);
+    });
 
-  return days.map((d) => ({ day: d, value: map[d] || 0 }));
+  return labels.map((day) => ({ day, value: map.get(day) ?? 0 }));
 }
 
-export function useWeeklyFromProgress(): WeeklyDatum[] {
-  const { progress } = useModuleProgress();
-  return useMemo(() => computeWeeklyFromProgress(progress), [progress]);
-}

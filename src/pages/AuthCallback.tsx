@@ -9,10 +9,11 @@ const AuthCallback = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-      <div className="text-sm opacity-80">Redirecionando...</div>
+    <div className="min-h-[100dvh] bg-[#0A0014] text-white flex items-center justify-center">
+      <div className="text-sm opacity-70">Redirecionando…</div>
     </div>
   );
 };
 
 export default AuthCallback;
+

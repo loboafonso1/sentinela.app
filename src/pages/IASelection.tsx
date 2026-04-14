@@ -1,116 +1,188 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { Eye, Search, Shield, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Eye, Search, Zap, Crown } from "lucide-react";
+
+const INTRO_VIDEO_CANDIDATES = ["/video/ia_avatar.mp4"];
+
+type LevelId = "iniciante" | "observador" | "analista" | "investigador";
+
+type Level = {
+  id: LevelId;
+  label: string;
+  subtitle: string;
+  color: string;
+  icon: typeof Shield;
+  audio: string;
+};
+
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+
+const hexToRgba = (hex: string, alpha: number) => {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${clamp(alpha, 0, 1)})`;
+};
+
+const levels: Level[] = [
+  { id: "iniciante", label: "Iniciante", subtitle: "Entrada controlada", color: "#00E5FF", icon: Shield, audio: "/audio/ia_resposta_iniciante.mp3" },
+  { id: "observador", label: "Observador", subtitle: "Leitura silenciosa", color: "#00FF9C", icon: Eye, audio: "/audio/ia_resposta_observador.mp3" },
+  { id: "analista", label: "Analista", subtitle: "Protocolo tático", color: "#A855F7", icon: Search, audio: "/audio/ia_resposta_analista.mp3" },
+  { id: "investigador", label: "Investigador", subtitle: "Rastreamento ativo", color: "#FFC857", icon: Zap, audio: "/audio/ia_resposta_investigador.mp3" },
+];
 
 const IASelection = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [showButtons, setShowButtons] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
-  const [videoLoaded, setVideoLoaded] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
-  const [isFadingOut, setIsFadingOut] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-
-  const loadingPhrases = [
-    "Iniciando interface",
-    "Verificando padrões",
-    "Sincronizando dados",
-    "Conexão quase estabelecida"
-  ];
-
-  const levels = [
-    { 
-      id: "iniciante", 
-      label: "Iniciante", 
-      audio: "/audio/ia_resposta_iniciante.mp3", 
-      color: "#00D1FF",
-      icon: <Shield className="w-5 h-5" />
-    },
-    { 
-      id: "observador", 
-      label: "Observador", 
-      audio: "/audio/ia_resposta_observador.mp3", 
-      color: "#00FF94",
-      icon: <Eye className="w-5 h-5" />
-    },
-    { 
-      id: "analista", 
-      label: "Analista", 
-      audio: "/audio/ia_resposta_analista.mp3", 
-      color: "#FF9900",
-      icon: <Search className="w-5 h-5" />
-    },
-    { 
-      id: "investigador", 
-      label: "Investigador", 
-      audio: "/audio/ia_resposta_investigador.mp3", 
-      color: "#FF00D9",
-      icon: <Zap className="w-5 h-5" />
-    },
-    { 
-      id: "especialista", 
-      label: "Especialista", 
-      audio: "/audio/ia_resposta_especialista.mp3", 
-      color: "#FF005C",
-      icon: <Crown className="w-5 h-5" />
-    },
-  ];
+  const videoCandidatesRef = useRef<string[]>(INTRO_VIDEO_CANDIDATES);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isFadingOut, setIsFadingOut] = useState(false);
+  const [phase, setPhase] = useState<"intro_playing" | "choices" | "selection_playing">("intro_playing");
+  const [audioBlocked, setAudioBlocked] = useState(false);
+  const [videoMuted, setVideoMuted] = useState(false);
+  const [introOverlayVisible, setIntroOverlayVisible] = useState(true);
+  const [videoSrc, setVideoSrc] = useState<string>(INTRO_VIDEO_CANDIDATES[0] ?? "/video/ia_avatar.mp4");
+  const [focusedId, setFocusedId] = useState<LevelId | null>(null);
+  const [pressedId, setPressedId] = useState<LevelId | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const pointerActiveRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const [idleLoop, setIdleLoop] = useState(false);
+  const idleLoopStartRef = useRef<number>(0);
+  const idleLoopEndRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!hasStarted) {
-      const interval = setInterval(() => {
-        setLoadingPhraseIndex((prev) => (prev + 1) % loadingPhrases.length);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [hasStarted, loadingPhrases.length]);
-
-  const handleStart = async () => {
-    setIsConnecting(true);
-    
-    // Pequeno delay para mostrar o estado "Conectando" antes da transição
-    setTimeout(async () => {
-      setHasStarted(true);
-      
-      if (videoRef.current) {
+    let cancelled = false;
+    const videoEl = videoRef.current;
+    const playVideo = async () => {
+      const v = videoEl;
+      if (!v) return;
+      try {
+        v.muted = false;
+        await v.play();
+        if (!cancelled) {
+          setVideoMuted(false);
+          setAudioBlocked(false);
+        }
+      } catch {
         try {
-          videoRef.current.muted = false;
-          videoRef.current.currentTime = 0;
-          videoRef.current.loop = false;
-          
-          videoRef.current.onended = () => {
-            if (videoRef.current) {
-              videoRef.current.muted = true;
-              videoRef.current.loop = true;
-              videoRef.current.play().catch(e => console.warn("Erro ao reiniciar loop:", e));
-            }
-            setIsPlaying(false);
-            setShowButtons(true);
-          };
-
-          await videoRef.current.play();
-          setIsPlaying(true);
-        } catch (e) {
-          console.warn("Erro ao iniciar vídeo:", e);
-          setShowButtons(true);
+          v.muted = true;
+          await v.play();
+        } catch {
+          void 0;
+        }
+        if (!cancelled) {
+          setVideoMuted(true);
+          setAudioBlocked(true);
         }
       }
-    }, 800);
+    };
+
+    playVideo();
+    const t = window.setTimeout(() => {
+      if (!cancelled) setIntroOverlayVisible(false);
+    }, 1600);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+      if (videoEl) {
+        videoEl.pause();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (!idleLoop) return;
+
+    const onTimeUpdate = () => {
+      const start = idleLoopStartRef.current;
+      const end = idleLoopEndRef.current;
+      if (!end || end <= start) return;
+      if (v.currentTime >= end - 0.02) {
+        v.currentTime = start;
+      }
+    };
+
+    v.addEventListener("timeupdate", onTimeUpdate);
+    return () => v.removeEventListener("timeupdate", onTimeUpdate);
+  }, [idleLoop]);
+
+  useEffect(() => {
+    if (phase !== "choices") return;
+    const onPointerUp = () => {
+      pointerActiveRef.current = false;
+      setPressedId(null);
+    };
+    window.addEventListener("pointerup", onPointerUp, { passive: true });
+    window.addEventListener("pointercancel", onPointerUp, { passive: true });
+    return () => {
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+    };
+  }, [phase]);
+
+  const pointerMoveResolve = () => {
+    if (!pointerActiveRef.current) return;
+    const p = lastPointRef.current;
+    if (!p) return;
+    const el = document.elementFromPoint(p.x, p.y);
+    const btn = el?.closest?.("[data-level-id]") as HTMLElement | null;
+    const id = (btn?.dataset.levelId as LevelId | undefined) || null;
+    if (id) setFocusedId(id);
   };
 
-  const handleLevelSelect = async (level: typeof levels[0]) => {
-    if (selectedLevel) return;
-    
-    setSelectedLevel(level.id);
-    // Não escondemos os botões imediatamente, apenas desabilitamos a interação via state
-    // mas vamos manter o usuário na mesma tela conforme solicitado.
+  const handleVideoError = () => {
+    const remaining = videoCandidatesRef.current.slice(1);
+    videoCandidatesRef.current = remaining;
+    const next = remaining[0];
+    if (next) setVideoSrc(next);
+    else {
+      setPhase("choices");
+    }
+  };
+
+  const ensureIdleLoopPlaying = async () => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    setVideoMuted(true);
+    setAudioBlocked(false);
+    setIdleLoop(true);
+
+    const end = idleLoopEndRef.current || v.duration || 0;
+    const start = idleLoopStartRef.current;
+    if (end && end > start && v.currentTime < start) {
+      v.currentTime = start;
+    }
+
+    try {
+      v.muted = true;
+      await v.play();
+    } catch {
+      void 0;
+    }
+  };
+
+  const handleSelect = (level: Level) => {
+    if (selectedId) return;
+    setSelectedId(level.id);
+    setPhase("selection_playing");
+    setPressedId(null);
     try {
       localStorage.setItem("user_level_name", level.label);
       if (user?.id) localStorage.setItem(`sentinela:user_level_name:${user.id}`, level.label);
@@ -118,285 +190,256 @@ const IASelection = () => {
       void 0;
     }
 
-    // Delay profissional de 500ms antes de iniciar o áudio
-    setTimeout(async () => {
+    void ensureIdleLoopPlaying();
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+
+    setTimeout(() => {
       const responseAudio = new Audio(level.audio);
       audioRef.current = responseAudio;
-      
-      try {
-        await responseAudio.play();
-        setIsPlaying(true); // Isso ativa a animação de pulso no avatar
-        
-        // O Builder PRECISA detectar o fim do áudio para transição de fase
-        responseAudio.onended = () => {
-          setIsPlaying(false);
-          setIsFadingOut(true); // Inicia o escurecimento da tela
-          
-          setTimeout(() => {
-            navigate("/treinamento"); 
-          }, 800); // Tempo para o fade out completar
-        };
-      } catch (e) {
-        console.error("Erro ao reproduzir áudio:", e);
+      responseAudio.onended = () => {
         setIsFadingOut(true);
         setTimeout(() => navigate("/treinamento"), 800);
-      }
+      };
+      responseAudio.play().catch(() => {
+        setIsFadingOut(true);
+        setTimeout(() => navigate("/treinamento"), 800);
+      });
     }, 500);
   };
 
   return (
-    <div className="fixed inset-0 bg-[#0A0014] flex flex-col items-center justify-center overflow-hidden text-white font-sans selection:bg-purple-500/20">
-      {/* Efeito de Ruído Digital Sutil */}
-      <div className="absolute inset-0 opacity-[0.02] pointer-events-none z-50 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-      
-      {/* Gradiente Vibrante de Fundo conforme referência */}
-      <div className="absolute inset-0 bg-[#4C00B0] z-0" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,_#0A0014_0%,_transparent_70%)] z-1" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_100%,_#7A00FF_0%,_transparent_60%)] opacity-60 z-1" />
-      <div className="absolute inset-0 bg-black/20 z-1" />
+    <div className={`fixed inset-0 bg-[#0A0014] text-white overflow-hidden transition-opacity duration-700 ${isFadingOut ? "opacity-0" : "opacity-100"}`}>
+      <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,_#4C00B0_0%,_transparent_55%)] opacity-25 z-0" />
 
-      {!hasStarted ? (
-        <div className="z-50 flex flex-col items-center justify-between h-full py-20 px-6 w-full max-w-lg">
-          {/* Título Superior */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ 
-              opacity: [0.6, 0.9, 0.6],
-              scale: [0.99, 1, 0.99]
-            }}
-            transition={{ 
-              duration: 5, 
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="text-center relative"
-          >
-            <h2 className="text-[10px] font-light tracking-[0.6em] uppercase text-white/60 mb-2">Interface</h2>
-            <h1 className="text-4xl font-serif font-bold tracking-[0.4em] uppercase bg-gradient-to-b from-white via-white to-white/60 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-              Sentinela
-            </h1>
-          </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={phase === "choices" ? { opacity: 1, y: [0, -6, 0] } : { opacity: 1, y: 0 }}
+        transition={phase === "choices" ? { duration: 0.45, ease: "easeOut" } : { duration: 0.35, ease: "easeOut" }}
+        className="relative z-10 mx-auto h-[100dvh] max-w-md px-6 pt-[max(env(safe-area-inset-top,12px),12px)] pb-[max(env(safe-area-inset-bottom,12px),12px)] flex flex-col"
+      >
+        <div className="flex-1 flex flex-col items-center justify-start">
+          <div className="w-full mt-2">
+            <div className="relative w-full h-[58dvh] max-h-[560px] rounded-[999px] overflow-hidden border border-[#7A00FF]/25 bg-black shadow-[0_0_30px_rgba(122,0,255,0.25)]">
+              <video
+                ref={videoRef}
+                src={videoSrc}
+                autoPlay
+                muted={videoMuted}
+                loop={false}
+                playsInline
+                className="w-full h-full object-cover scale-110 opacity-95"
+                onError={handleVideoError}
+                onLoadedMetadata={() => {
+                  const v = videoRef.current;
+                  if (!v || !Number.isFinite(v.duration)) return;
+                  const end = Math.max(0, v.duration);
+                  const start = Math.max(0, end - 1.2);
+                  idleLoopStartRef.current = start;
+                  idleLoopEndRef.current = end;
+                }}
+                onEnded={() => {
+                  setPhase("choices");
+                  setVideoMuted(true);
+                  setAudioBlocked(false);
+                  setIdleLoop(true);
+                  const v = videoRef.current;
+                  if (v) {
+                    const end = idleLoopEndRef.current || v.duration || 0;
+                    const start = idleLoopStartRef.current;
+                    if (end && end > start) {
+                      v.currentTime = start;
+                    } else {
+                      v.currentTime = 0;
+                    }
+                    v.play().catch(() => void 0);
+                  }
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_rgba(0,242,255,0.18)_0%,_transparent_55%)]" />
 
-          {/* Frases de Inicialização Centrais */}
-          <div className="flex flex-col items-center gap-6">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={loadingPhraseIndex}
-                initial={{ opacity: 0, filter: "blur(10px)" }}
-                animate={{ opacity: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, filter: "blur(10px)" }}
-                transition={{ duration: 1.5 }}
-                className="text-center"
-              >
-                <p className="text-xl font-light tracking-[0.2em] text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]">
-                  {loadingPhrases[loadingPhraseIndex]}
-                  <motion.span
-                    animate={{ opacity: [0, 1, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    className="inline-block ml-2 w-0.5 h-6 bg-white/60 align-middle"
-                  />
-                </p>
-              </motion.div>
-            </AnimatePresence>
-            
-            <motion.p 
-              animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.05, 1] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="text-[11px] font-medium text-white/70 uppercase tracking-[0.6em] drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]"
-            >
-              Aguardando Ativação
-            </motion.p>
-          </div>
-          
-          {/* Botão de Início */}
-          <div className="w-full px-4">
-            <button
-              onClick={handleStart}
-              disabled={isConnecting}
-              className="group relative w-full py-7 bg-gradient-to-r from-[#FF00D9]/20 via-[#00F2FF]/20 to-[#FF00D9]/20 border border-white/10 rounded-2xl overflow-hidden transition-all duration-700 hover:border-white/30 active:scale-[0.97] shadow-[0_0_30px_rgba(255,255,255,0.05)] hover:shadow-[0_0_50px_rgba(255,255,255,0.1)] backdrop-blur-xl"
-            >
-              <AnimatePresence mode="wait">
-                {!isConnecting ? (
+              <AnimatePresence>
+                {introOverlayVisible && phase !== "choices" && (
                   <motion.div
-                    key="idle"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex items-center justify-center gap-4"
+                    className="absolute top-4 left-1/2 -translate-x-1/2 rounded-full bg-black/40 border border-white/10 backdrop-blur-xl px-4 py-2"
                   >
-                    <span className="text-sm font-bold tracking-[0.4em] uppercase text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">Iniciar Conexão</span>
-                    <motion.div
-                      animate={{ x: [0, 4, 0], opacity: [0.5, 1, 0.5] }}
-                      transition={{ duration: 2.5, repeat: Infinity }}
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                    </motion.div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="connecting"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center justify-center gap-4"
-                  >
-                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    <span className="text-sm font-bold tracking-[0.4em] uppercase text-white">Conectando</span>
+                    <div className="text-[10px] uppercase tracking-[0.35em] text-white/70 font-bold">Sincronização iniciada</div>
                   </motion.div>
                 )}
               </AnimatePresence>
-              
-              {/* Efeito de Reflexo de Borda (Glow nas pontas conforme referência) */}
-              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#00F2FF] to-transparent opacity-40" />
-              <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#FF00D9] to-transparent opacity-40" />
-              
-              {/* Brilho de Energia Interno */}
-              <div className="absolute inset-0 bg-gradient-to-r from-[#FF00D9]/10 via-[#00F2FF]/10 to-[#FF00D9]/10 opacity-50" />
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.1] to-transparent -translate-x-full group-hover:animate-[shimmer_4s_infinite] pointer-events-none" />
-            </button>
+
+              <AnimatePresence>
+                {audioBlocked && phase !== "choices" && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    onClick={async () => {
+                      try {
+                        const v = videoRef.current;
+                        if (!v) return;
+                        v.muted = false;
+                        setVideoMuted(false);
+                        await v.play();
+                        setAudioBlocked(false);
+                      } catch {
+                        void 0;
+                      }
+                    }}
+                    className="absolute bottom-4 left-4 right-4 py-4 rounded-3xl bg-gradient-to-r from-[#7A00FF] to-[#FF00D9] text-white font-bold tracking-[0.35em] uppercase text-[10px] active:scale-[0.98] transition-all"
+                  >
+                    Ativar som
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
-      ) : (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.5 }}
-          className="relative w-full h-full"
-        >
-          {/* Indicador de carregamento caso o vídeo demore */}
-          {!videoLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center z-0 bg-black">
-              <div className="w-8 h-8 border-2 border-white/10 border-t-white/50 rounded-full animate-spin" />
-            </div>
-          )}
 
-          {/* Avatar IA em loop */}
-          <div className="relative w-full h-full flex items-center justify-center z-10">
-            <motion.div
-              animate={isPlaying ? {
-                scale: [1, 1.03, 1],
-              } : {
-                scale: 1,
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="w-full h-full flex items-center justify-center"
-            >
-              <video
-                ref={videoRef}
-                src={`/video/ia_avatar.mp4?v=${Date.now()}`}
-                autoPlay
-                playsInline
-                className={`min-w-full min-h-full object-cover pointer-events-none transition-opacity duration-1500 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
-                onCanPlay={() => {
-                  setVideoLoaded(true);
-                }}
-                onEnded={() => {
-                  console.log("Vídeo finalizado (inline) - disparando transição");
-                  if (videoRef.current) {
-                    videoRef.current.muted = true;
-                    videoRef.current.loop = true;
-                    videoRef.current.play().catch(e => console.warn("Erro ao reiniciar loop:", e));
-                  }
-                  setIsPlaying(false);
-                  setShowButtons(true);
-                }}
-                onError={(e) => {
-                  console.error("Erro no vídeo (tentando /video/ia_avatar.mp4):", e);
-                  setShowButtons(true);
-                }}
-              />
-            </motion.div>
-          </div>
-
-          {/* Gradiente de Interação */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40 z-15 pointer-events-none" />
-
-          {/* Efeito de Fade Out Profissional */}
-          <AnimatePresence>
-            {isFadingOut && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.8 }}
-                className="absolute inset-0 bg-black z-[100] pointer-events-none"
-              />
-            )}
-          </AnimatePresence>
-
-          {/* Botões de Seleção */}
-          <div className="absolute bottom-12 w-full max-w-lg px-6 z-20 left-1/2 -translate-x-1/2">
+        <div className="w-full mt-4">
+          <div className="h-[36dvh] max-h-[320px] min-h-[260px]">
             <AnimatePresence>
-              {showButtons && (
+              {phase === "choices" && (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="grid grid-cols-1 gap-4"
+                  ref={listRef}
+                  initial="hidden"
+                  animate="show"
+                  exit="hidden"
+                  variants={{
+                    hidden: { opacity: 0, x: 60 },
+                    show: {
+                      opacity: 1,
+                      x: 0,
+                      transition: { type: "spring", damping: 18, stiffness: 140, staggerChildren: 0.08, delayChildren: 0.03 },
+                    },
+                  }}
+                  onPointerDown={(e) => {
+                    pointerActiveRef.current = true;
+                    lastPointRef.current = { x: e.clientX, y: e.clientY };
+                    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+                    rafRef.current = requestAnimationFrame(() => {
+                      rafRef.current = null;
+                      pointerMoveResolve();
+                    });
+                  }}
+                  onPointerMove={(e) => {
+                    if (!pointerActiveRef.current) return;
+                    lastPointRef.current = { x: e.clientX, y: e.clientY };
+                    if (rafRef.current) return;
+                    rafRef.current = requestAnimationFrame(() => {
+                      rafRef.current = null;
+                      pointerMoveResolve();
+                    });
+                  }}
+                  onPointerLeave={() => {
+                    if (!pointerActiveRef.current) setFocusedId(null);
+                  }}
+                  className="space-y-3 select-none"
                 >
-                  {levels.map((level, index) => (
-                    <motion.button
-                      key={level.id}
-                      initial={{ opacity: 0, x: -30 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.15, duration: 0.6, ease: "easeOut" }}
-                      onClick={() => handleLevelSelect(level)}
-                      disabled={!!selectedLevel}
-                      style={{
-                        borderColor: selectedLevel === level.id ? level.color : "rgba(255,255,255,0.1)",
-                        backgroundColor: selectedLevel === level.id ? `${level.color}22` : "rgba(0,0,0,0.4)",
-                        boxShadow: selectedLevel === level.id ? `0 0 30px ${level.color}44` : "none"
-                      }}
-                      whileHover={!selectedLevel ? { 
-                        backgroundColor: `${level.color}22`,
-                        borderColor: `${level.color}88`,
-                        boxShadow: `0 0 30px ${level.color}44, inset 0 0 15px ${level.color}22`
-                      } : {}}
-                      whileTap={!selectedLevel ? { 
-                        scale: 0.95,
-                        backgroundColor: level.color,
-                        borderColor: "#FFFFFF",
-                        boxShadow: `0 0 40px ${level.color}88`
-                      } : {}}
-                      className={`w-full py-4 px-8 border-2 rounded-full text-white flex items-center gap-5 group transition-all backdrop-blur-xl ${selectedLevel && selectedLevel !== level.id ? 'opacity-30' : 'opacity-100'} ${selectedLevel ? 'cursor-default' : 'cursor-pointer'}`}
-                    >
-                      <motion.div 
-                        style={{ color: level.color }} 
+                  {levels.map((level) => {
+                    const Icon = level.icon;
+                    const id = level.id;
+                    const selected = selectedId === id;
+                    const isFocused = focusedId === id;
+                    const isPressed = pressedId === id;
+                    const disabled = !!selectedId && !selected;
+                    const glow = selected ? 0.45 : isPressed ? 0.36 : isFocused ? 0.3 : 0.18;
+                    const borderAlpha = selected ? 0.55 : isFocused ? 0.42 : 0.3;
+                    const iconGlow = selected ? 0.75 : isFocused ? 0.6 : 0.35;
+                    const scale = disabled ? 1 : isPressed ? 0.98 : isFocused ? 1.03 : 1;
+
+                    return (
+                      <motion.button
+                        key={id}
+                        type="button"
+                        data-level-id={id}
                         variants={{
-                          tap: { color: "#FFFFFF" }
+                          hidden: { opacity: 0, y: 12, filter: "blur(10px)" },
+                          show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.28, ease: "easeOut" } },
                         }}
-                        className="drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
-                      >
-                        {level.icon}
-                      </motion.div>
-                      <motion.span 
-                        variants={{
-                          tap: { color: "#FFFFFF" }
+                        animate={{ scale }}
+                        transition={{ duration: 0.16, ease: "easeOut" }}
+                        onPointerEnter={() => setFocusedId(id)}
+                        onPointerDown={() => setPressedId(id)}
+                        onPointerUp={() => setPressedId(null)}
+                        onClick={() => handleSelect(level)}
+                        disabled={disabled}
+                        className="w-full rounded-[26px] text-left backdrop-blur-[12px] border active:outline-none"
+                        style={{
+                          background: "rgba(20, 20, 30, 0.40)",
+                          borderColor: hexToRgba(level.color, borderAlpha),
+                          boxShadow: [
+                            `0 0 0 1px ${hexToRgba(level.color, borderAlpha)}`,
+                            `0 10px 40px ${hexToRgba(level.color, glow * 0.35)}`,
+                            `0 0 22px ${hexToRgba(level.color, glow * 0.55)}`,
+                            `inset 0 1px 0 rgba(255,255,255,0.06)`,
+                            `inset 0 -8px 18px rgba(0,0,0,0.35)`,
+                          ].join(", "),
+                          transformOrigin: "center",
                         }}
-                        className="tracking-[0.3em] uppercase text-[10px] font-bold text-white/80 group-hover:text-white transition-colors"
                       >
-                        {level.label}
-                      </motion.span>
-                      <div className="ml-auto opacity-0 group-hover:opacity-40 transition-opacity">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                      </div>
-                    </motion.button>
-                  ))}
+                        <div className="px-6 py-4 flex items-center gap-5">
+                          <div
+                            className="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center border"
+                            style={{
+                              borderColor: hexToRgba(level.color, 0.35),
+                              background: "rgba(0,0,0,0.22)",
+                              boxShadow: `0 0 18px ${hexToRgba(level.color, iconGlow)}`,
+                            }}
+                          >
+                            <Icon className="w-6 h-6" style={{ color: level.color, filter: `drop-shadow(0 0 10px ${hexToRgba(level.color, 0.6)})` }} />
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[15px] font-semibold tracking-wide text-white">{level.label}</div>
+                            <div className="text-[11px] tracking-[0.18em] uppercase text-white/55 mt-1 truncate">{level.subtitle}</div>
+                          </div>
+
+                          <motion.div
+                            className="shrink-0 w-[10px] h-12 rounded-full"
+                            animate={{
+                              opacity: selected ? 1 : isFocused ? 0.85 : 0.55,
+                              boxShadow: selected
+                                ? `0 0 22px ${hexToRgba(level.color, 0.85)}`
+                                : isFocused
+                                  ? `0 0 16px ${hexToRgba(level.color, 0.65)}`
+                                  : `0 0 10px ${hexToRgba(level.color, 0.45)}`,
+                            }}
+                            transition={{ duration: 0.18, ease: "easeOut" }}
+                            style={{ background: hexToRgba(level.color, selected ? 0.9 : 0.7) }}
+                          >
+                            <motion.div
+                              className="w-full h-full rounded-full"
+                              animate={{ opacity: [0.55, 1, 0.55] }}
+                              transition={{ duration: selected ? 1.1 : 1.6, repeat: Infinity, ease: "easeInOut" }}
+                              style={{ background: "rgba(255,255,255,0.06)" }}
+                            />
+                          </motion.div>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-        </motion.div>
-      )}
+        </div>
 
-      <style>{`
-        @keyframes shimmer {
-          100% { transform: translateX(100%); }
-        }
-      `}</style>
+        {selectedId && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 text-center text-[10px] uppercase tracking-[0.35em] text-white/35">
+            Sincronizando com a IA…
+          </motion.div>
+        )}
+      </motion.div>
     </div>
   );
 };
