@@ -317,6 +317,16 @@ const AnalisePadroes = () => {
     const metrics = computeMetrics(allAnswers, previousAttempt);
 
     try {
+      const redoPendingKey = `sentinela:analysis:redoPending:${userId}`;
+      const redoPending = localStorage.getItem(redoPendingKey) === "1";
+      if (redoPending) {
+        localStorage.removeItem(redoPendingKey);
+        const redoCountKey = `sentinela:analysis:redoCount:${userId}`;
+        const prevRedoCount = Number(localStorage.getItem(redoCountKey) || "0") || 0;
+        localStorage.setItem(redoCountKey, String(prevRedoCount + 1));
+        metrics.xp_gain = Math.max(0, Math.round(metrics.xp_gain * 0.85));
+      }
+
       const currentXp = Number(localStorage.getItem(`sentinela:xp:${userId}`) || "0") || 0;
       localStorage.setItem(`sentinela:xp:${userId}`, String(currentXp + metrics.xp_gain));
       localStorage.setItem(`sentinela:analysis:lastAttempt:${userId}`, JSON.stringify(allAnswers));

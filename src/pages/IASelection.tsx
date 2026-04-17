@@ -225,7 +225,20 @@ const IASelection = () => {
       >
         <div className="flex-1 flex flex-col items-center justify-start">
           <div className="w-full mt-2">
-            <div className="relative w-full h-[58dvh] max-h-[560px] rounded-[999px] overflow-hidden border border-[#7A00FF]/25 bg-black shadow-[0_0_30px_rgba(122,0,255,0.25)]">
+            <motion.div
+              layout
+              animate={
+                phase === "intro_playing"
+                  ? { y: 0, scale: 1 }
+                  : { y: -10, scale: 0.98 }
+              }
+              transition={{ type: "spring", stiffness: 140, damping: 18 }}
+              className={`relative w-full overflow-hidden bg-black shadow-[0_0_30px_rgba(122,0,255,0.25)] ${
+                phase === "intro_playing"
+                  ? "h-[100dvh] rounded-none border-0"
+                  : "h-[52dvh] max-h-[520px] rounded-[999px] border border-[#7A00FF]/25"
+              }`}
+            >
               <video
                 ref={videoRef}
                 src={videoSrc}
@@ -233,7 +246,9 @@ const IASelection = () => {
                 muted={videoMuted}
                 loop={false}
                 playsInline
-                className="w-full h-full object-cover scale-110 opacity-95"
+                className={`w-full h-full object-cover opacity-95 ${
+                  phase === "intro_playing" ? "scale-125" : "scale-110"
+                }`}
                 onError={handleVideoError}
                 onLoadedMetadata={() => {
                   const v = videoRef.current;
@@ -301,12 +316,12 @@ const IASelection = () => {
                   </motion.button>
                 )}
               </AnimatePresence>
-            </div>
+            </motion.div>
           </div>
         </div>
 
         <div className="w-full mt-4">
-          <div className="h-[36dvh] max-h-[320px] min-h-[260px]">
+          <div className="h-[38dvh] max-h-[340px] min-h-[260px]">
             <AnimatePresence>
               {phase === "choices" && (
                 <motion.div
@@ -387,9 +402,9 @@ const IASelection = () => {
                           transformOrigin: "center",
                         }}
                       >
-                        <div className="px-6 py-4 flex items-center gap-5">
+                        <div className="px-6 py-3 flex items-center gap-5">
                           <div
-                            className="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center border"
+                            className="shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center border"
                             style={{
                               borderColor: hexToRgba(level.color, 0.35),
                               background: "rgba(0,0,0,0.22)",
@@ -405,7 +420,7 @@ const IASelection = () => {
                           </div>
 
                           <motion.div
-                            className="shrink-0 w-[10px] h-12 rounded-full"
+                            className="shrink-0 w-[10px] h-11 rounded-full"
                             animate={{
                               opacity: selected ? 1 : isFocused ? 0.85 : 0.55,
                               boxShadow: selected

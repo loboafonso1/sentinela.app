@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Brain, Quote, RotateCcw } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -6,11 +6,85 @@ import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
 
 type MetricsPayload = {
-  attention: number;
-  reasoning: number;
-  perception: number;
-  consistency: number;
+  xp_gain?: number;
+  attention?: number;
+  reasoning?: number;
+  perception?: number;
+  consistency?: number;
   flags?: { autoEdicao?: boolean; controleConsciente?: boolean };
+  finished_at?: string;
+};
+
+type AnswerRecord = {
+  pergunta_id: number;
+  resposta_escolhida: string;
+  tempo_resposta_ms: number;
+};
+
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+
+const parseJson = <T,>(raw: string | null): T | null => {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+};
+
+const levelDefs = [
+  { level: 1, minXp: 0 },
+  { level: 2, minXp: 900 },
+  { level: 3, minXp: 2200 },
+  { level: 4, minXp: 3800 },
+  { level: 5, minXp: 6000 },
+  { level: 6, minXp: 9000 },
+];
+
+const getLevelNumber = (xp: number) => {
+  let current = levelDefs[0];
+  for (const def of levelDefs) {
+    if (xp >= def.minXp) current = def;
+  }
+  return current.level;
+};
+
+const messageForScore = (score: number, attention: number, consistency: number, lieDetection: number) => {
+  if (score >= 85) return "Seu padrão indica alta resistência à manipulação.";
+  if (score >= 75) return "Seu nível de análise está acima da média.";
+  if (score >= 67) return "Você está evoluindo rapidamente na leitura de padrões.";
+  if (score >= 58) return "Você demonstra boa leitura comportamental, mas ainda perde sinais sutis.";
+  if (score >= 50) return "Seu comportamento indica atenção moderada a detalhes.";
+  if (attention < 40) return "Seu tempo de resposta compromete sua precisão.";
+  if (consistency < 45) return "Sua análise é inconsistente em cenários ambíguos.";
+  if (lieDetection < 40) return "Você demonstra dificuldade em identificar intenções ocultas.";
+  if (score >= 40) return "Você ainda apresenta vulnerabilidade a enganos simples.";
+  return "Seu desempenho atual indica baixa leitura comportamental.";
+};
+
+const shortenForLevel = (msg: string, level: number) => {
+  if (level > 2) return msg;
+  const comma = msg.indexOf(",");
+  if (comma > 0) return `${msg.slice(0, comma)}.`;
+  return msg;
+};
+
+const interpretationFor = (attention: number, precision: number, facialReading: number, lieDetection: number, consistency: number) => {
+  if (attention < 45 && precision < 55) return "Seu tempo de resposta compromete decisões críticas.";
+  if (precision < 50 && lieDetection < 50) return "Você percebe o cenário, mas erra na interpretação.";
+  if (consistency < 50) return "Seu padrão oscila sob ambiguidade e perde estabilidade.";
+  if (facialReading < 45 && lieDetection >= 60) return "Boa leitura de cenário, mas sinais faciais ainda passam despercebidos.";
+  if (attention >= 70 && precision < 60) return "Você é rápido, mas ainda impreciso sob pressão.";
+  if (precision >= 75 && consistency >= 75) return "Seu desempenho é estável e acima da média.";
+  return "Você possui boa capacidade analítica, mas ainda falha sob pressão.";
+};
+
+const brainColorFor = (score: number) => {
+  if (score >= 90) return "#FFD700";
+  if (score >= 75) return "#A855F7";
+  if (score >= 55) return "#00E5FF";
+  if (score >= 35) return "#FFC857";
+  return "#FF4D6D";
 };
 
 const Progresso = () => {
@@ -19,6 +93,8 @@ const Progresso = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [localMetrics, setLocalMetrics] = useState<MetricsPayload | undefined>(undefined);
+  const [localAttempt, setLocalAttempt] = useState<AnswerRecord[] | undefined>(undefined);
+  const [xpTotal, setXpTotal] = useState(0);
   const navMetrics = (location.state as { metrics?: MetricsPayload } | null)?.metrics;
 
   useEffect(() => {
@@ -30,12 +106,14 @@ const Progresso = () => {
     try {
       const raw = localStorage.getItem(`sentinela:analysis:lastMetrics:${user.id}`);
       if (!raw) return;
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const parsed = parseJson<Record<string, unknown>>(raw);
+      if (!parsed) return;
+      const xp_gain = typeof parsed.xp_gain === "number" ? parsed.xp_gain : undefined;
       const attention = typeof parsed.attention === "number" ? parsed.attention : undefined;
       const reasoning = typeof parsed.reasoning === "number" ? parsed.reasoning : undefined;
       const perception = typeof parsed.perception === "number" ? parsed.perception : undefined;
       const consistency = typeof parsed.consistency === "number" ? parsed.consistency : undefined;
-      if (attention === undefined || reasoning === undefined || perception === undefined || consistency === undefined) return;
+      const finished_at = typeof parsed.finished_at === "string" ? parsed.finished_at : undefined;
       const flagsRaw = parsed.flags;
       const flags =
         flagsRaw && typeof flagsRaw === "object"
@@ -44,29 +122,71 @@ const Progresso = () => {
               controleConsciente: (flagsRaw as Record<string, unknown>).controleConsciente === true,
             }
           : undefined;
-      setLocalMetrics({ attention, reasoning, perception, consistency, flags });
+      setLocalMetrics({ xp_gain, attention, reasoning, perception, consistency, flags, finished_at });
     } catch {
       void 0;
     }
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    const attempt = parseJson<AnswerRecord[]>(localStorage.getItem(`sentinela:analysis:lastAttempt:${user.id}`));
+    setLocalAttempt(Array.isArray(attempt) ? attempt : undefined);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const xpRaw = localStorage.getItem(`sentinela:xp:${user.id}`) || "0";
+    const xp = Number(xpRaw) || 0;
+    setXpTotal(xp);
+  }, [user?.id]);
+
   const resolved = navMetrics || localMetrics;
+
+  const derived = useMemo(() => {
+    const attempt = localAttempt || null;
+    const consistencyRaw = resolved?.consistency ?? 0;
+    const perceptionRaw = resolved?.perception ?? 0;
+
+    let avgMs = 0;
+    if (attempt && attempt.length) {
+      avgMs = attempt.reduce((acc, a) => acc + (Number(a.tempo_resposta_ms) || 0), 0) / attempt.length;
+    }
+
+    const attention = clamp(Math.round(100 - (avgMs / 6000) * 100), 0, 100);
+    const lieDetection = clamp(Math.round(0.75 * perceptionRaw + 0.25 * consistencyRaw), 0, 100);
+    const facialReadingRaw = Number(localStorage.getItem(`sentinela:facial:lastScore:${user?.id}`) || "0") || 0;
+    const facialReading = clamp(Math.round(facialReadingRaw), 0, 100);
+
+    let precision = clamp(Math.round(0.45 * attention + 0.35 * consistencyRaw + 0.2 * lieDetection), 0, 100);
+    const redoCount = Number(localStorage.getItem(`sentinela:analysis:redoCount:${user?.id}`) || "0") || 0;
+    if (redoCount > 0) precision = clamp(Math.round(precision * Math.pow(0.9, redoCount)), 0, 100);
+
+    const consistency = clamp(Math.round(consistencyRaw), 0, 100);
+    const score = clamp(Math.round((attention + precision + facialReading + lieDetection + consistency) / 5), 0, 100);
+
+    const level = getLevelNumber(xpTotal);
+    const msg = shortenForLevel(messageForScore(score, attention, consistency, lieDetection), level);
+    const interpretation = shortenForLevel(interpretationFor(attention, precision, facialReading, lieDetection, consistency), level);
+    const brainColor = brainColorFor(score);
+
+    return { attention, precision, facialReading, lieDetection, consistency, score, msg, interpretation, brainColor };
+  }, [localAttempt, resolved?.consistency, resolved?.perception, user?.id, xpTotal]);
+
   const stats = [
-    { label: "Atenção", value: resolved?.attention ?? 0, color: "#7A00FF" },
-    { label: "Raciocínio", value: resolved?.reasoning ?? 0, color: "#00F2FF" },
-    { label: "Percepção", value: resolved?.perception ?? 0, color: "#FF00D9" },
-    { label: "Consistência", value: resolved?.consistency ?? 0, color: "#FF9900" },
+    { label: "Atenção", value: derived.attention, color: "#00E5FF" },
+    { label: "Precisão", value: derived.precision, color: "#00FF9C" },
+    { label: "Leitura facial", value: derived.facialReading, color: "#A855F7" },
+    { label: "Detecção de mentira", value: derived.lieDetection, color: "#FFC857" },
+    { label: "Consistência", value: derived.consistency, color: "#FF4D6D" },
   ];
 
   const getDynamicPhrase = () => {
-    const consistency = resolved?.consistency ?? 0;
     const flags = resolved?.flags || null;
     const autoEdicaoAtiva = !!flags && typeof flags === "object" && (flags as Record<string, unknown>).autoEdicao === true;
-    if (autoEdicaoAtiva) return "Você não respondeu… você recalculou.";
-    if (consistency > 90) return "Sua leitura comportamental apresenta estabilidade incomum.";
-    if (consistency > 70) return "O sistema detectou ajustes no seu padrão de resposta.";
-    if (consistency > 0) return "Seu comportamento indica adaptação ativa ao sistema.";
-    return "Inicie a análise para gerar métricas de evolução.";
+    if (autoEdicaoAtiva) return "Sua análise foi recalculada.";
+    if (!resolved) return "Inicie a análise para gerar métricas de evolução.";
+    return derived.msg;
   };
 
   return (
@@ -83,7 +203,14 @@ const Progresso = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => navigate("/analise-padroes", { state: { fromRedo: true } })}
+          onClick={() => {
+            try {
+              if (user?.id) localStorage.setItem(`sentinela:analysis:redoPending:${user.id}`, "1");
+            } catch {
+              void 0;
+            }
+            navigate("/analise-padroes", { state: { fromRedo: true } });
+          }}
           className="p-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-2 group transition-all"
         >
           <RotateCcw className="w-4 h-4 text-white/40 group-hover:text-[#00F2FF] transition-colors" />
@@ -135,6 +262,16 @@ const Progresso = () => {
         </div>
 
         <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+          className="p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] shadow-[0_10px_30px_rgba(0,0,0,0.2)]"
+        >
+          <div className="text-[10px] uppercase tracking-[0.5em] text-white/35 font-bold">INTERPRETAÇÃO</div>
+          <div className="mt-3 text-sm text-white/80 leading-relaxed">{derived.interpretation}</div>
+        </motion.div>
+
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.8 }}
@@ -143,8 +280,15 @@ const Progresso = () => {
           <div className="absolute inset-0 border border-white/5 rounded-full animate-[spin_20s_linear_infinite] opacity-30" />
           <div className="absolute inset-4 border border-white/5 rounded-full animate-[spin_15s_linear_infinite_reverse] opacity-30" />
           <div className="absolute inset-8 border border-white/5 rounded-full opacity-20" />
-          <div className="relative p-8 bg-[#7A00FF]/5 rounded-full border border-[#7A00FF]/10 backdrop-blur-sm">
-            <Brain className="w-12 h-12 text-[#7A00FF] drop-shadow-[0_0_20px_rgba(122,0,255,0.6)]" />
+          <div
+            className="relative p-8 rounded-full border backdrop-blur-sm"
+            style={{
+              background: `${derived.brainColor}12`,
+              borderColor: `${derived.brainColor}33`,
+              boxShadow: `0 0 40px ${derived.brainColor}22`,
+            }}
+          >
+            <Brain className="w-12 h-12" style={{ color: derived.brainColor, filter: `drop-shadow(0 0 22px ${derived.brainColor}99)` }} />
           </div>
         </motion.div>
       </main>
@@ -155,4 +299,3 @@ const Progresso = () => {
 };
 
 export default Progresso;
-
